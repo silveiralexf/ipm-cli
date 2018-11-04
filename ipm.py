@@ -16,7 +16,6 @@ Usage:
 ipm login                               : Perform login on your IPM subscription
 ipm logout                              : Logout from the current IPM subscription
 ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
-
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
     get thr                             : List of all available thresholds.
@@ -24,14 +23,12 @@ ipm get <object> / <object_id>
     get thr -f <threshold_list>         : Export a list of thresholds to json format. (*)
     get rg                              : List of all available Resource Groups.
     get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
-
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
-
 ipm del <object> <object_id>
     del thr <threshold_id>              : Deletes a threshold (*)
     del rg  <resourcegroup_id>          : Deletes a Resource Group
-    
+
 (*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
     """)
@@ -83,7 +80,7 @@ def check_login(session_type):
     if os.path.exists(ipm_config) == True:
         ipm_config_age = os.path.getatime(ipm_config)
         half_hour = time.time() - 120 * 60
-        
+
         ## DEBUG --> Uncomment values below for converting from epoch to human readable time
         # file_age = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ipm_config_age))
         # file_age_limit = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(half_hour))
@@ -194,7 +191,7 @@ def login():
                         if (ipm_type == "private"):
                             region_flag = True
                             region = "pv"
-                
+
                 while (region_flag != True):
                     region = input('Type the region of your IPM subscription (eu, na, ap): ')
                     if (region == 'na' or region == "eu" or region == "ap"):
@@ -208,6 +205,17 @@ def login():
         sys.exit (0)
     except os.error:
         subscription  = input("\nNo subscription was found on '%s', type your IPM subscription number (ex. fea2ea0f40c71c59d11c5a49d9269d0e): " % ipm_accounts)
+
+        type_flag, region_flag = False, False
+
+        while (type_flag != True):
+            ipm_type = input('Type your subscription type (cloud / private): ')
+            if (ipm_type == "cloud" or ipm_type == "private"):
+                type_flag = True
+                if (ipm_type == "private"):
+                    region_flag = True
+                    region = "pv"
+
         region = input('Type the region of your IPM subscription (eu, na, ap): ')
         alias = input('Type an alias for your IPM subscription (ex. trial-na, sla-eu): ')
         pass
@@ -222,14 +230,14 @@ def login():
     secret = (str(token) + make_pw_hash(str(encoded_credentials)) + str(token) + str(encoded_credentials) + str(token))
 
     if check_connection(subscription,region,alias,username,password, ipm_type):
-        
+
         with open(ipm_config, "w") as f:
             f.write(secret)
             print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
     else:
         print ("ERROR: Failed to login with the credentials provided. Please try again:\n")
         sys.exit (1)
-    
+
     return subscription, region, alias, username, password, ipm_type
 
 def set_querystring(href,session_type):
@@ -260,7 +268,7 @@ def set_querystring(href,session_type):
 
 def set_payload(href,session_type,rg_identification, rg_description):
     """Set the headers and API query string based on the type of session and/or method."""
-    
+
     rg_uuid = str(uuid.uuid4())
     headers = {
     'content-type': "application/json",
@@ -281,7 +289,7 @@ def set_payload(href,session_type,rg_identification, rg_description):
         sys.exit(1)
 
 def set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials):
-    if (session_type == 'del_rg'):    
+    if (session_type == 'del_rg'):
         rg_uuid = str(uuid.uuid4())
         headers = {
         'Referer' : '%s' % href,
@@ -358,7 +366,7 @@ def make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,s
         sys.exit(1)
 
 def make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials):
-    if (ipm_type == "cloud"):    
+    if (ipm_type == "cloud"):
         href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
         url = href + '/1.0/topology/mgmt_artifacts'
         headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
@@ -370,7 +378,7 @@ def make_rg_del_request(ipm_type,session_type,rg_identification,subscription,reg
         href = 'https://' + subscription
         url = href + '/1.0/topology/mgmt_artifacts'
         headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
-        
+
         url = url + "/" + rg_identification
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
         r = requests.request("DELETE", url, headers=headers, verify=False)
@@ -404,10 +412,10 @@ def get_agents(arguments):
         subscription, region, alias, username, password, ipm_type = check_login(session_type)
     except:
         sys.exit (1)
-    
+
     href_complement = "/1.0/topology/mgmt_artifacts"
     r = make_agent_request(ipm_type,session_type,href_complement,subscription,region,username,password)
-        
+
     json_agt_dict = json.loads(r.content)
     num_arguments = (len(arguments))
 
@@ -481,7 +489,7 @@ def get_thresholds():
     """Get the list of thresholds from API and display it on the screen."""
 
     session_type = 'get_thresholds'
-    
+
     # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
     try:
         subscription, region, alias, username, password, ipm_type = check_login(session_type)
@@ -564,9 +572,9 @@ Usage:
         else:
             # prints a single threshold that was informed
             threshold_name = arguments[3]
-            payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name            
+            payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
             r = make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
-            
+
             if (r.status_code == 200):
                 json_thr_dict = json.loads(r.content)
                 n = 0
@@ -696,10 +704,10 @@ def get_resource_groups():
                 version = "unknown"
                 pass
             n += 1
-            
+
             resource_groups = ("\'" + rg_id, displayLabel , description)
             sorted_resource_groups.append(resource_groups)
-        
+
         # Sort list by second item (RG name)
         for item in sorted(sorted_resource_groups, key=lambda x: x[1]):
             print ('\',\''.join(map(str, item) ) + "\'")
@@ -709,15 +717,15 @@ def get_resource_groups():
 
 def add_rg(arguments):
     """Creates a new Resource Group based on user's input."""
-    
+
     session_type = "add_rg"
-    
+
     # If function is being called from login, there will be no values assigned to vars so, we must first give it a try to avoid errors
     try:
         subscription, region, alias, username, password, ipm_type = check_login(session_type)
     except:
         sys.exit (1)
-    
+
     # Check the arguments and make sure RG id is informed
     if ((len(arguments)) != 5):
         usage()
@@ -730,7 +738,7 @@ def add_rg(arguments):
             print ("SUCCESS: '%s' was successfully created. \n\nNotice that it may take a few seconds before the group starts to show-up.\n" %(rg_identification))
         else:
             print ("ERROR: Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
-        
+
 def del_rg(arguments):
     """Deletes a new Resource Group based on user's input."""
 
@@ -741,21 +749,28 @@ def del_rg(arguments):
         subscription, region, alias, username, password, ipm_type = check_login(session_type)
     except:
         sys.exit (1)
-    
+
     # Check the arguments and make sure RG id is informed
     if ((len(arguments)) != 4):
         usage()
     else:
         rg_identification = sys.argv[3]
 
+        # href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
+        # url = href + '/1.0/topology/mgmt_artifacts'
+
         encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
-        
+        # headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
+
+        # url = url + "/" + rg_identification
+        # r = requests.request("DELETE", url, headers=headers)
+
         r = make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials)
 
         if (r.status_code == 204):
             print ("SUCCESS: '%s' was successfully removed. \n\nNotice that it may take a few seconds before the group disappears.\n" %(rg_identification))
         else:
-            print ("ERROR: Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))               
+            print ("ERROR: Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
 
 def main():
     """Main function, will get arguments from user through 'get_arg' function and redirect accordingly to what he wants to accomplish."""
@@ -776,10 +791,7 @@ def main():
             add_rg(arguments)
         elif arguments[1] == "del":
             cmd = arguments[2]
-            if (cmd == "rg"):
-                del_rg(arguments)
-            elif (cmd == "thr"):
-                usage()
+            del_rg(arguments)
     except KeyboardInterrupt:
         sys.exit(1)
 
