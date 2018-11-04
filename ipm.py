@@ -812,7 +812,6 @@ def main():
                 del_rg(arguments)
             elif (cmd == "thr"):
                 usage()
-            del_rg(arguments)
     except KeyboardInterrupt:
         sys.exit(1)
 
