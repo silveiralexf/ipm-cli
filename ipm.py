@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 
 # from pprint import pprint
@@ -11,11 +11,13 @@ def usage():
     """Usage instructions, will be shown to user every time a wrong syntax happens."""
     print ("""
 You did not specify a valid command or failed to pass the proper options. Exiting!
+
 Usage:
 ---------------------------------------------------------------------------------------------------------
 ipm login                               : Perform login on your IPM subscription
 ipm logout                              : Logout from the current IPM subscription
 ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
+
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
     get thr                             : List of all available thresholds.
@@ -23,8 +25,10 @@ ipm get <object> / <object_id>
     get thr -f <threshold_list>         : Export a list of thresholds to json format. (*)
     get rg                              : List of all available Resource Groups.
     get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
+
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
+
 ipm del <object> <object_id>
     del thr <threshold_id>              : Deletes a threshold (*)
     del rg  <resourcegroup_id>          : Deletes a Resource Group
@@ -123,17 +127,41 @@ def check_login(session_type):
         login()
 # --------------------------------------------------------------------------
 
+def make_login_request(ipm_type,url,username,password):
+    try:
+        if (ipm_type == "cloud"):
+            r = requests.get(url, auth=(username, password))
+            return r
+        elif (ipm_type == "private"):
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+            r = requests.get(url, auth=(username, password), verify=False)
+            return r
+    except requests.ConnectionError as e:
+        print("ERROR!! Connection Error. Make sure you are connected to Internet. Technical Details given below.\n")
+        print(str(e))
+        sys.exit(1)
+    except requests.Timeout as e:
+        print("ERROR - HTTP Timeout Error")
+        print(str(e))
+        sys.exit(1)
+    except requests.RequestException as e:
+        print("ERROR - General Error")
+        print(str(e))
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print("ERROR - Program closed unexpectedly.")
+        sys.exit(1)
+
 def check_connection(subscription,region,alias,username,password,ipm_type):
     """Check if the provided crendials are valid to authenticate on IPM API."""
 
     queystring = '1.0/topology/mgmt_artifacts'
     if (ipm_type == "cloud"):
         url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com/' + queystring
-        r = requests.get(url, auth=(username, password))
+        r = make_login_request(ipm_type,url,username,password)
     elif (ipm_type == "private"):
         url = 'https://' + subscription + '/' + queystring
-        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.get(url, auth=(username, password), verify=False)
+        r = make_login_request(ipm_type,url,username,password)
 
     #ipm_config = os.path.expanduser("~/.ipmconfig")
 
@@ -230,10 +258,13 @@ def login():
     secret = (str(token) + make_pw_hash(str(encoded_credentials)) + str(token) + str(encoded_credentials) + str(token))
 
     if check_connection(subscription,region,alias,username,password, ipm_type):
-
-        with open(ipm_config, "w") as f:
-            f.write(secret)
-            print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
+        try:
+            with open(ipm_config, "w") as f:
+                f.write(secret)
+                print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
+        except IOError:
+            print ("ERROR: Failed to login with the credentials provided. Please try again:\n")    
+            sys.exit (1)
     else:
         print ("ERROR: Failed to login with the credentials provided. Please try again:\n")
         sys.exit (1)
@@ -684,11 +715,6 @@ def get_resource_groups():
         rg_id = "Null"
         r = make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username,password)
 
-        # href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
-        # url = href + '/1.0/topology/mgmt_artifacts/'
-        # headers, querystring = set_querystring(href,session_type)
-        # r = requests.get(url, params=querystring , headers=headers, auth=(username,password))
-
         json_rg_dict = json.loads(r.content)
 
         n = 0
@@ -755,16 +781,7 @@ def del_rg(arguments):
         usage()
     else:
         rg_identification = sys.argv[3]
-
-        # href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
-        # url = href + '/1.0/topology/mgmt_artifacts'
-
         encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
-        # headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
-
-        # url = url + "/" + rg_identification
-        # r = requests.request("DELETE", url, headers=headers)
-
         r = make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials)
 
         if (r.status_code == 204):
@@ -791,6 +808,10 @@ def main():
             add_rg(arguments)
         elif arguments[1] == "del":
             cmd = arguments[2]
+            if (cmd == "rg"):
+                del_rg(arguments)
+            elif (cmd == "thr"):
+                usage()
             del_rg(arguments)
     except KeyboardInterrupt:
         sys.exit(1)
