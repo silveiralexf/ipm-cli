@@ -2,6 +2,11 @@
 
 This script is intended to assist interacting with IBM Performance Management (IPM) Rest API.
 
+#### Download Here
+
+- [ipm-cli](https://github.com/fsilveir/ipm-cli/releases)
+
+
 #### Requirements
 
 - Python3.x
