@@ -9,16 +9,16 @@ This script is intended to assist interacting with IBM Performance Management (I
 
 #### Install Instructions
 
-There are 2 ways of using this script, first requires Python3 (with requests module installed). To do that can execute the script directly from the command line  
+There are 2 ways of using this script, first requires Python3 (with requests module installed). To do that, execute the script directly from the command line as shown below: 
 
 ```bash
 $ chmod 755 ipm.py
 $ ./ipm.py
 ```
 
-You can also use the compiled version included on this repository under `ipm-cli` directory. With the compiled version you can execute the script on any Linux-64 server even without Python3 installed or with different versions installed, since the package include all the required dependencies.
+In case you don't have Python3 and the required requests module installed, you can also use the compiled version included in this repository under `ipm-cli` directory. With the compiled version you can execute the script on any Linux-64 server even without Python3 installed or with different Python versions installed, since the package include all the required dependencies.
 
-Just copy `ipm-cli` directory to `/opt/ibm/ipm-cli` and create a symbolic link to `/usr/bin/ipm` so you can execute the script directly from any path.
+Just copy the `ipm-cli` directory to `/opt/ibm/ipm-cli` and create a symbolic link to `/usr/bin/ipm` so you can execute the script directly from any path.
 
 ```bash
 $ sudo cp -R ipm-cli/ /opt/ibm/ipm-cli
@@ -45,10 +45,12 @@ ipm get <object> / <object_id>
 
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
+    add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
 
 ipm del <object> <object_id>
     del thr <threshold_id>              : Deletes a threshold (*)
     del rg  <resourcegroup_id>          : Deletes a Resource Group
+    del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
 
 (*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------

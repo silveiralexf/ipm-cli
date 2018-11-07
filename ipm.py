@@ -28,10 +28,12 @@ ipm get <object> / <object_id>
 
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
+    add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
 
 ipm del <object> <object_id>
     del thr <threshold_id>              : Deletes a threshold (*)
     del rg  <resourcegroup_id>          : Deletes a Resource Group
+    del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
 
 (*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
@@ -58,6 +60,14 @@ def get_arg(argv):
     else:
         usage()
     return arguments
+
+def if_not_empty(value):
+    """Sets a dummy value if _uiThresholdType value is None to avoid errors, added this additional check due to GSMA Monitoring Agent missed _uiThresholdType value bug."""
+    if value is None:
+        var = "unknown"
+        return "\'" + var + "\'"
+    else:
+        return "\'" + value + "\'"
 
 def logout():
     """Logs out from the IPM subscription and removes the cached secret."""
@@ -90,7 +100,7 @@ def check_login(session_type):
         # file_age_limit = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(half_hour))
 
         if ipm_config_age < half_hour:
-            #print ("DEBUG --> KEY IS OLDER THAN 60 MINUTES - FILE_AGE", file_age, "AGE_LIMIT", file_age_limit )
+            #print ("DEBUG --> KEY IS OLDER THAN 120 MINUTES - FILE_AGE", file_age, "AGE_LIMIT", file_age_limit )
             os.remove(ipm_config)
 
     try:
@@ -130,14 +140,14 @@ def check_login(session_type):
 def make_login_request(ipm_type,url,username,password):
     try:
         if (ipm_type == "cloud"):
-            r = requests.get(url, auth=(username, password))
+            r = requests.get(url, auth=(username, password), timeout=30)
             return r
         elif (ipm_type == "private"):
             requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-            r = requests.get(url, auth=(username, password), verify=False)
+            r = requests.get(url, auth=(username, password), verify=False, timeout=30)
             return r
     except requests.ConnectionError as e:
-        print("ERROR!! Connection Error. Make sure you are connected to Internet. Technical Details given below.\n")
+        print("ERROR - Connection Error. Make sure you have connectivity to the IPM subscription. Technical Details given below.\n")
         print(str(e))
         sys.exit(1)
     except requests.Timeout as e:
@@ -148,19 +158,27 @@ def make_login_request(ipm_type,url,username,password):
         print("ERROR - General Error")
         print(str(e))
         sys.exit(1)
+    except requests.SSLError:
+        print("ERROR - An SSL error occurred. %s" % r.status_code)
+        sys.exit(1)
+    except requests.HTTPError:
+        print("ERROR - An HTTP Error occurred with status code %s" % r.status_code)
+        sys.exit(1)
     except KeyboardInterrupt:
         print("ERROR - Program closed unexpectedly.")
         sys.exit(1)
 
+
 def check_connection(subscription,region,alias,username,password,ipm_type):
     """Check if the provided crendials are valid to authenticate on IPM API."""
 
-    queystring = '1.0/topology/mgmt_artifacts'
+    queystring = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds?_offset=1&_limit=1'
+    #queystring = '/1.0/topology/mgmt_artifacts'
     if (ipm_type == "cloud"):
-        url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com/' + queystring
+        url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + queystring
         r = make_login_request(ipm_type,url,username,password)
     elif (ipm_type == "private"):
-        url = 'https://' + subscription + '/' + queystring
+        url = 'https://' + subscription + queystring
         r = make_login_request(ipm_type,url,username,password)
 
     #ipm_config = os.path.expanduser("~/.ipmconfig")
@@ -171,9 +189,14 @@ def check_connection(subscription,region,alias,username,password,ipm_type):
             print ("Your subscription has expired and is now suspended from the IBM Performance Management (SaaS) service\n\n")
             login()
         return subscription, region, alias, username, password, ipm_type
-    else:
-        print ("ERROR: Failed to login with the credentials provided. Please try again:\n")
+    elif (r.status_code == 401):
+        print ("ERROR - Failed to login with the credentials provided. Please try again:\n")
         login()
+    else:
+        print ("ERROR - Failed to perform login. Please confirm you can log directly to your subscription.\n")
+        print ("HTTP STATUS CODE ", r.status_code)
+        print (r.text)
+        sys.exit(1)
 
 
 def login():
@@ -193,7 +216,7 @@ def login():
                 ipm_type = str(data[n]["type"])
                 subscription = str(data[n]["subscription"])
                 region = str(data[n]["region"])
-                print ("{0:<2} - IPM Account: {1:<18} Subscription: {2:<32}    Region: {3:>2}".format(id_num,alias,subscription,region))
+                print ("{0:<2} - IPM Account: {1:<25} Subscription: {2:<32}    Region: {3:>2}".format(id_num,alias,subscription,region))
                 n += 1
             choice = input("\nChoose the number of the subscription you want to login, or type the subscription \n(ex. fea2ea0f40c71c59d11c5a49d9269d0e / 9.212.149.105:8091 ):")
 
@@ -263,10 +286,10 @@ def login():
                 f.write(secret)
                 print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
         except IOError:
-            print ("ERROR: Failed to login with the credentials provided. Please try again:\n")    
+            print ("ERROR - Failed to login with the credentials provided. Please try again:\n")    
             sys.exit (1)
     else:
-        print ("ERROR: Failed to login with the credentials provided. Please try again:\n")
+        print ("ERROR - Failed to login with the credentials provided. Please try again:\n")
         sys.exit (1)
 
     return subscription, region, alias, username, password, ipm_type
@@ -316,11 +339,11 @@ def set_payload(href,session_type,rg_identification, rg_description):
                     "keyIndexName" : rg_uuid}
         return headers, payload
     else:
-        print ("ERROR: Could not determine session origin. Exiting!")
+        print ("ERROR - Could not determine session origin. Exiting!")
         sys.exit(1)
 
-def set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials):
-    if (session_type == 'del_rg'):
+def set_headers_for_post_deletion(href,session_type,rg_identification,encoded_credentials):
+    if (session_type == 'del_rg' or session_type == 'add_agents'):
         rg_uuid = str(uuid.uuid4())
         headers = {
         'Referer' : '%s' % href,
@@ -333,7 +356,7 @@ def set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_cred
         }
         return headers
     else:
-        print ("ERROR: Could not determine session origin. Exiting!")
+        print ("ERROR - Could not determine session origin. Exiting!")
         sys.exit(1)
 
 def make_agent_request(ipm_type,session_type,href_complement,subscription,region,username,password):
@@ -341,17 +364,17 @@ def make_agent_request(ipm_type,session_type,href_complement,subscription,region
         href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
         headers, querystring = set_querystring(href,session_type)
         url = href + href_complement
-        r = requests.get(url, params=querystring , headers=headers, auth=(username,password))
+        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), timeout=30)
         return r
     elif (ipm_type == "private"):
         href = 'https://' + subscription
         headers, querystring = set_querystring(href,session_type)
         url = href + href_complement
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), verify=False)
+        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), timeout=30, verify=False)
         return r
     else:
-        print ("ERROR: Could not determine IPM subscription type. Exiting!")
+        print ("ERROR - Could not determine IPM subscription type. Exiting!")
         sys.exit(1)
 
 def make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username,password):
@@ -362,7 +385,7 @@ def make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username
         else:
             url = href + '/1.0/topology/mgmt_artifacts/' + rg_id + '/references/to/contains'
         headers, querystring = set_querystring(href,session_type)
-        r = requests.get(url, params=querystring , headers=headers, auth=(username,password))
+        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), timeout=30)
         return r
     elif (ipm_type == "private"):
         href = 'https://' + subscription
@@ -372,10 +395,10 @@ def make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username
             url = href + '/1.0/topology/mgmt_artifacts/' + rg_id + '/references/to/contains'
         headers, querystring = set_querystring(href,session_type)
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), verify=False)
+        r = requests.get(url, params=querystring , headers=headers, auth=(username,password), timeout=30, verify=False)
         return r
     else:
-        print ("ERROR: Could not determine IPM subscription type. Exiting!")
+        print ("ERROR - Could not determine IPM subscription type. Exiting!")
         sys.exit(1)
 
 def make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password):
@@ -383,53 +406,78 @@ def make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,s
         href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
         url = href + '/1.0/topology/mgmt_artifacts'
         headers, payload = set_payload(href,session_type,rg_identification,rg_description)
-        r = requests.post(url, json=payload, headers=headers, auth=(username,password))
+        r = requests.post(url, json=payload, headers=headers, auth=(username,password), timeout=30)
         return r
     elif (ipm_type == "private"):
         href = 'https://' + subscription
         url = href + '/1.0/topology/mgmt_artifacts'
         headers, payload = set_payload(href,session_type,rg_identification,rg_description)
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.post(url, json=payload, headers=headers, auth=(username,password), verify=False)
+        r = requests.post(url, json=payload, headers=headers, auth=(username,password), timeout=30, verify=False)
         return r
     else:
-        print ("ERROR: Could not determine IPM subscription type. Exiting!")
+        print ("ERROR - Could not determine IPM subscription type. Exiting!")
         sys.exit(1)
 
 def make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials):
     if (ipm_type == "cloud"):
         href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
         url = href + '/1.0/topology/mgmt_artifacts'
-        headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
+        headers = set_headers_for_post_deletion(href,session_type,rg_identification,encoded_credentials)
         url = url + "/" + rg_identification
-        r = requests.request("DELETE", url, headers=headers)
+        r = requests.request("DELETE", url, headers=headers, timeout=30)
         return r
 
     elif (ipm_type == "private"):
         href = 'https://' + subscription
         url = href + '/1.0/topology/mgmt_artifacts'
-        headers = set_headers_for_rg_deletion(href,session_type,rg_identification,encoded_credentials)
+        headers = set_headers_for_post_deletion(href,session_type,rg_identification,encoded_credentials)
 
         url = url + "/" + rg_identification
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.request("DELETE", url, headers=headers, verify=False)
+        r = requests.request("DELETE", url, headers=headers, verify=False, timeout=30)
         return r
     else:
-        print ("ERROR: Could not determine IPM subscription type. Exiting!")
+        print ("ERROR - Could not determine IPM subscription type. Exiting!")
         sys.exit(1)
+
+def make_agt_post_del_request(ipm_type,session_type,agt_id,rg_id,subscription,region,encoded_credentials,operation_type):
+    
+    if (operation_type == "add"):
+        method = "POST"
+    elif (operation_type == "del"):
+        method = "DELETE"
+
+    if (ipm_type == "cloud"):
+        href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
+        url = href + '/1.0/topology/mgmt_artifacts/' + rg_id + "/references/to/contains/" + agt_id
+        headers = set_headers_for_post_deletion(href,session_type,rg_id,encoded_credentials)
+
+        r = requests.request(method, url, headers=headers, timeout=30)
+        return r
+    elif (ipm_type == "private"):
+        href = 'https://' + subscription
+        url = href + '/1.0/topology/mgmt_artifacts/' + rg_id + "/references/to/contains/" + agt_id
+        headers = set_headers_for_post_deletion(href,session_type,rg_id,encoded_credentials)
+
+        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        r = requests.request(method, url, headers=headers, timeout=30, verify=False)
+        return r
+
+        
 
 def make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password):
     if (ipm_type == "cloud"):
         url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + payload
-        r = requests.get(url, auth=(username, password))
+        r = requests.get(url, auth=(username, password), timeout=30)
         return r
     elif (ipm_type == "private"):
         url = 'https://' + subscription + payload
         requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-        r = requests.get(url, auth=(username, password), verify=False)
+        r = requests.get(url, auth=(username, password), verify=False, timeout=30)
         return r
     else:
-        print ("ERROR: Could not determine IPM subscription type. Exiting!")
+        print ("ERROR - Could not determine IPM subscription type. Exiting!")
         sys.exit(1)
 
 
@@ -620,7 +668,7 @@ Usage:
                         print (json.dumps(threshold, indent=4))
                         n += 1
                 else:
-                    print ("ERROR: Threshold '%s' was not found." % threshold_name)
+                    print ("ERROR - Threshold '%s' was not found." % threshold_name)
                     sys.exit(1)
 
                 sys.exit(0)
@@ -639,15 +687,21 @@ Usage:
             json_thr_dict = json.loads(r.content)
         else:
             continue
-
+        
         counter = 0
         thresholds = []
         for _ in json_thr_dict['_items']:
             try:
-                product_code = '\'' +  json_thr_dict['_items'][counter]['_appliesToAgentType'] + '\''
-                label = '\'' + json_thr_dict['_items'][counter]['label'] + '\''
-                description = '\'' + json_thr_dict['_items'][counter]['description'] + '\''
-                threshold_type = '\'' + json_thr_dict['_items'][counter]['_uiThresholdType'] + '\''
+                product_code = "'unknown"
+                label = "'unknown"
+                description = "unknown"
+                threshold_type = "Unknown"
+
+                product_code = if_not_empty(json_thr_dict['_items'][counter]['_appliesToAgentType'])
+                label = if_not_empty(json_thr_dict['_items'][counter]['label'])
+                description = if_not_empty(json_thr_dict['_items'][counter]['description'])
+                threshold_type = if_not_empty(json_thr_dict['_items'][counter]['_uiThresholdType'])
+
             except KeyError:
                 pass
             counter +=1
@@ -696,7 +750,6 @@ def get_resource_groups():
                 status = 'unknown'
                 pass
             n += 1
-            #print (agt_name + "," + pc + "," + version + "," + status)
             agents.append(agt_name + "," + pc + "," + version + "," + status)
 
         for item in (sorted(agents)):
@@ -763,7 +816,7 @@ def add_rg(arguments):
         if (r.status_code == 201):
             print ("SUCCESS: '%s' was successfully created. \n\nNotice that it may take a few seconds before the group starts to show-up.\n" %(rg_identification))
         else:
-            print ("ERROR: Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
+            print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
 
 def del_rg(arguments):
     """Deletes a new Resource Group based on user's input."""
@@ -787,7 +840,56 @@ def del_rg(arguments):
         if (r.status_code == 204):
             print ("SUCCESS: '%s' was successfully removed. \n\nNotice that it may take a few seconds before the group disappears.\n" %(rg_identification))
         else:
-            print ("ERROR: Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
+            print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
+
+def add_del_agt(arguments):
+    """Adds an agent to a Resource Group."""
+
+    session_type = "get_agents"
+
+    if (len(arguments) == 5):
+        operation_type = arguments[1]
+        search_agent_name = arguments[3]
+        rg_id = arguments[4]
+        
+        # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
+        try:
+            subscription, region, alias, username, password, ipm_type = check_login(session_type)
+        except:
+            sys.exit (1)
+        
+        href_complement = "/1.0/topology/mgmt_artifacts"
+        r = make_agent_request(ipm_type,session_type,href_complement,subscription,region,username,password)
+        
+        json_agt_dict = json.loads(r.content)
+        
+        n = 0
+        agents = []
+        session_type = "add_agents"
+        encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+        
+        for _ in json_agt_dict['_items']:
+            try:
+                agt_id =  json_agt_dict['_items'][n]['_id']
+                agt_name = json_agt_dict['_items'][n]['keyIndexName']
+            except KeyError:
+                agt_id = "unknown"
+                agt_name = "unknown"
+            
+            if search_agent_name in agt_name:
+                r = make_agt_post_del_request(ipm_type,session_type,agt_id,rg_id,subscription,region,encoded_credentials,operation_type)
+                
+                if (r.status_code == 200 or r.status_code == 204 ):
+                    if (operation_type == "add"):
+                        print ("SUCCESS: '%s' was successfully added to Resource Group '%s'." %(agt_name, rg_id))
+                    elif (operation_type == "del"):
+                        print ("SUCCESS: '%s' was successfully removed from Resource Group '%s'." %(agt_name, rg_id))
+                else:
+                    print ("ERROR - Script failed with 'HTTP Status code %s' when trying to perform the operation on Resource Group '%s'." %(r.status_code, rg_id))
+
+            n += 1
+    else:
+        usage()
 
 def main():
     """Main function, will get arguments from user through 'get_arg' function and redirect accordingly to what he wants to accomplish."""
@@ -805,11 +907,16 @@ def main():
                 usage()
         elif arguments[1] == "add":
             cmd = arguments[2]
-            add_rg(arguments)
+            if (cmd == "rg"):
+                add_rg(arguments)
+            elif (cmd == "agt"):
+                add_del_agt(arguments)
         elif arguments[1] == "del":
             cmd = arguments[2]
             if (cmd == "rg"):
                 del_rg(arguments)
+            elif (cmd == "agt"):
+                add_del_agt(arguments)
             elif (cmd == "thr"):
                 usage()
     except KeyboardInterrupt:
