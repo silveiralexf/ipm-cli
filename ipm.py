@@ -11,11 +11,13 @@ def usage():
     """Usage instructions, will be shown to user every time a wrong syntax happens."""
     print ("""
 You did not specify a valid command or failed to pass the proper options. Exiting!
+
 Usage:
 ---------------------------------------------------------------------------------------------------------
 ipm login                               : Perform login on your IPM subscription
 ipm logout                              : Logout from the current IPM subscription
 ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
+
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
     get thr                             : List of all available thresholds.
@@ -23,13 +25,16 @@ ipm get <object> / <object_id>
     get thr -f <threshold_list>         : Export a list of thresholds to json format. (*)
     get rg                              : List of all available Resource Groups.
     get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
+
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
     add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
+
 ipm del <object> <object_id>
     del thr <threshold_id>              : Deletes a threshold (*)
     del rg  <resourcegroup_id>          : Deletes a Resource Group
     del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
+    
 (*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
     """)
