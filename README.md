@@ -83,8 +83,8 @@ ipm setaccount                          : Creates quick login profile with your 
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
     get thr                             : List of all available thresholds.
-    get thr <thr_name>                  : Export a single threshold to json format.
-    get thr -f <threshold_list>         : Export a list of thresholds to json format. (*)
+    get thr <thr_name>                  : Displays a single threshold in JSON format.
+    get thr -f <threshold_list>         : Displays multiple thresholds from a list in JSON format.
     get rg                              : List of all available Resource Groups.
     get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
 
@@ -99,6 +99,7 @@ ipm del <object> <object_id>
 
 (*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
+
 
 ```
 
