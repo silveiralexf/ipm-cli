@@ -12,7 +12,6 @@ import time
 import uuid
 from urllib3.exceptions import InsecureRequestWarning
 
-<<<<<<< HEAD
 # ------------------------------------------------------------------------------------------------------------
 
 def usage():
