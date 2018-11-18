@@ -1,5 +1,0 @@
-# Ignore binaries directory
-ipm-cli/
-
-# Ignore release packages
-*.tar.gz

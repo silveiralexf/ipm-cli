@@ -1,29 +1,10 @@
-# v0.2.0
-
-### Binaries
-
-- [ipm-cli_v0.2.0](https://github.com/fsilveir/ipm-cli/releases/tag/v0.2.0)
-
-### Changelog - Nov/18/2018
-
-- Refactored the script to use classes for better organizing the code and simplify requests.
-- Implemented new functionality to export list of thresholds to JSON (`ipm get thr -f`).
-- Changed default request timeout from 30 to 60 seconds to accomodate bigger subscriptions.
-- Fixed bug on login function, where the 'region' where users were allowed to enter invalid choices.
-- Added a new region for Latin America (`la`) to the interactive login option.
-- Updated name of multiple methods to improve readability. 
-- Added/Updated multiple comments to improve readability.
-- Changed imports to separate lines instead of using all in a single line, as recommended by [PEP 8](https://www.python.org/dev/peps/pep-0008/).
-
-
-
 # v0.1.0
 
 ### Binaries
 
-- [ipm-cli_v0.1.0](https://github.com/fsilveir/ipm-cli/releases/tag/v0.1.0)
+[ipm-cli_v0.1.0](https://github.com/fsilveir/ipm-cli/releases/tag/v0.1.0)
 
-### Changelog - Nov/06/2018
+### Changelog
 
 - Improved README with more instructions and added CHANGELOG for better version control.
 
