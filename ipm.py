@@ -233,8 +233,8 @@ class Subscription:
 
                 return subscription, region, alias, username, password, ipm_type
 
-        except:
-            print ("You're not authenticated, please proceed with authentication.")
+        except (OSError, IOError):
+            print ("You're not authenticated, please proceed with authentication")
             Subscription.login()
 
     @staticmethod
@@ -262,7 +262,7 @@ class Agents:
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
         try:
             subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-        except:
+        except TypeError:
             sys.exit (0)
 
         href_complement = "/1.0/topology/mgmt_artifacts"
@@ -323,7 +323,6 @@ class Agents:
                     status =  json_agt_dict['_items'][n]['online']
                 except NameError:
                     version, hostname, product_code, status, description = 'unknown', 'unknown', 'unknown', 'N', 'unknown'
-                pass
             n += 1
             #print ('\'' + agt_name + '\'' + "," + \
             agents.append('\'' + agt_name + '\'' + "," + \
@@ -372,7 +371,7 @@ class Agents:
             # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
             try:
                 subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-            except:
+            except TypeError:
                 sys.exit (0)
 
             href_complement = "/1.0/topology/mgmt_artifacts"
@@ -381,7 +380,6 @@ class Agents:
             json_agt_dict = json.loads(r.content)
 
             n = 0
-            agents = []
             session_type = "add_agents"
             encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
 
@@ -461,7 +459,7 @@ class Thresholds:
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
         try:
             subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-        except:
+        except TypeError:
             sys.exit (0)
 
         arguments = get_arg(sys.argv)
@@ -673,7 +671,7 @@ class ResourceGroups:
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
         try:
             subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-        except:
+        except TypeError:
             sys.exit (0)
 
         subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
@@ -716,7 +714,7 @@ class ResourceGroups:
             # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
             try:
                 subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-            except:
+            except TypeError:
                 sys.exit (0)
 
             # Get list of all Resource Groups
@@ -828,7 +826,7 @@ class ResourceGroups:
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try to avoid errors
         try:
             subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-        except:
+        except TypeError:
             sys.exit (0)
 
         # Check the arguments and make sure RG id is informed
@@ -853,7 +851,7 @@ class ResourceGroups:
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try to avoid errors
         try:
             subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
-        except:
+        except TypeError:
             sys.exit (0)
 
         # Check the arguments and make sure RG id is informed

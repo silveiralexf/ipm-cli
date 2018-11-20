@@ -6,37 +6,32 @@ The idea is that users may interact with IPM from the command line for simple op
 
 ## Download
 
-|Release               | Binaries                                                                                                     | Source Code                                                                        |
-|--------------------- | ------------------------------------------------------------------------------------------------------------ | -----------------------------------------------------------------------------------|
-|v0.2.0 (Nov-18-2018) | [ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz) | [ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip)|
-|v0.1.0 (Nov-06-2018) | [ipm-cli_v0.1.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.1.0/ipm-cli_v0.1.0.tar.gz) | [ipm-cli_v0.1.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.1.0.zip)|
-
-
+|Release             |Binaries                                                                                                     |Source Code                                                                         |
+|--------------------|-------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+|v0.2.0 (Nov-18-2018)|[ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz)|[ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip)|
+|v0.1.0 (Nov-06-2018)|[ipm-cli_v0.1.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.1.0/ipm-cli_v0.1.0.tar.gz)|[ipm-cli_v0.1.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.1.0.zip)|
 
 ## Functionality
 
-*  List of monitoring agents by status, version and type.
-*  List and details of monitored thresholds
-*  Export threshold contents to JSON format 
-*  List of Resource Groups
-*  List the Monitored Agents that are part of a Resource Group
-*  Add or Remove one or more agents to a Resource Group
-*  Add or Delete a Resource Group
-
+ *  List of monitoring agents by status, version and type.
+ *  List and details of monitored thresholds
+ *  Export threshold contents to JSON format 
+ *  List of Resource Groups
+ *  List the Monitored Agents that are part of a Resource Group
+ *  Add or Remove one or more agents to a Resource Group
+ *  Add or Delete a Resource Group
 
 ## Key Features
 
-*  You can login and logout on different IPM subscriptions and the script will store an encrypted password for your session without the need of multiple logins each time you communicate with the API.
-*  You encrypted password is unique and cannot be used by other users.
-*  You can store the information of multiple subscriptions so that you can pick and choose the subscriptions you'll log to through a quick-menu.
-*  The compiled version of the script allows you to use the script regardless of having Python3 and its required modules installed.
-*  Open-souce, free to use, modify and distribute as you see fit. (don't forget to give some feedback too!)
-
+ *  You can login and logout on different IPM subscriptions and the script will store an encrypted password for your session without the need of multiple logins each time you communicate with the API.
+ *  You encrypted password is unique and cannot be used by other users.
+ *  You can store the information of multiple subscriptions so that you can pick and choose the subscriptions you'll log to through a quick-menu.
+ *  The compiled version of the script allows you to use the script regardless of having Python3 and its required modules installed.
+ *  Open-souce, free to use, modify and distribute as you see fit. (don't forget to give some feedback too!)
 
 ## Key Benefits
 
 This script is intended to assist IPM administrators and users to easily interact with its API from the command line. The main benefit is not having to manually handle the API's response and to memorize the different API calls and paths. The script provides an easy to read help funcion and does all the rest for you.
-
 
 ## Install Instructions
 
@@ -46,8 +41,8 @@ There are 2 different ways of using the script, from source and from the compile
 
 Be sure you meet the following requirements:
 
-- Python3.x
-- Python Requests Module (requests==2.19.1)
+ *  Python3.x
+ *  Python Requests Module (requests==2.19.1)
 
  If the requirements are properly installed, you can execute the script directly from the command line as shown below: 
 

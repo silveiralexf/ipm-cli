@@ -5,7 +5,7 @@
 *  Refactored the script to use classes for better organizing the code and simplify requests.
 *  Implemented new functionality to export list of thresholds to JSON (`ipm get thr -f`).
 *  Changed default request timeout from 30 to 60 seconds to accomodate bigger subscriptions.
-*  Fixed bug on login function, where the 'region' where users were allowed to enter invalid choices.
+*  Fixed bug on login function, on which users could input an invalid region.
 *  Added a new region for Latin America (`la`) to the interactive login option.
 *  Updated name of multiple methods to improve readability. 
 *  Added/Updated multiple comments to improve readability.
