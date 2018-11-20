@@ -562,7 +562,6 @@ class Thresholds:
                                         n += 1
                                 else:
                                     print ("INFO - Threshold '%s' was not found." % threshold_name.strip())
-                                    pass
 
                             else:
                                 print ("Failed to extract information. Script is aborting! ")
