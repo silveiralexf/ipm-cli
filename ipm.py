@@ -14,41 +14,9 @@ from urllib3.exceptions import InsecureRequestWarning
 
 # ------------------------------------------------------------------------------------------------------------
 
-def usage():
-    """Usage instructions, will be shown to user every time a wrong syntax happens."""
-    print ("""
-You did not specify a valid command or failed to pass the proper options. Exiting!
-
-Usage:
----------------------------------------------------------------------------------------------------------
-ipm login                               : Perform login on your IPM subscription
-ipm logout                              : Logout from the current IPM subscription
-ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
-
-ipm get <object> / <object_id>
-    get agt                             : List all existing agents on the subscription.
-    get thr                             : List of all available thresholds.
-    get thr <thr_name>                  : Export a single threshold to json format.
-    get thr -f <threshold_list>         : Export a list of thresholds to json format. (*)
-    get rg                              : List of all available Resource Groups.
-    get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
-
-ipm add <object> <object_id>
-    add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
-    add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
-
-ipm del <object> <object_id>
-    del thr <threshold_id>              : Deletes a threshold (*)
-    del rg  <resourcegroup_id>          : Deletes a Resource Group
-    del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
-
-(*) All marked items are still pending implementation
----------------------------------------------------------------------------------------------------------
-    """)
-    sys.exit(1)
-
 class Subscription:
 
+    @staticmethod
     def login():
         """Main login function, interactively asks for IPM subscription information and credentials."""
 
@@ -60,7 +28,7 @@ class Subscription:
                 data = json.load(f)
                 data_choice = []
                 n = 0
-                table = []
+
                 for _ in data:
                     id_num = str(data[n]["id"])
                     alias = str(data[n]["alias"])
@@ -124,7 +92,6 @@ class Subscription:
                     region_flag = True
 
             alias = input('Type an alias for your IPM subscription (ex. trial-na, sla-eu): ')
-            pass
 
         username = input('Type your IPM username (ex.: fsilveir@br.ibm.com / apmadmin): ')
         password = getpass.getpass('Type your password: ')
@@ -149,6 +116,7 @@ class Subscription:
 
         return subscription, region, alias, username, password, ipm_type
 
+    @staticmethod
     def check_connection(subscription, region, alias, username, password, ipm_type):
         """Check if the provided crendials are valid to authenticate on IPM API."""
 
@@ -175,6 +143,7 @@ class Subscription:
             print (r.text)
             sys.exit(1)
 
+    @staticmethod
     def logout():
         """Logs out from the IPM subscription and removes the cached secret."""
         ipm_config = os.path.expanduser("~/.ipmconfig")
@@ -183,6 +152,7 @@ class Subscription:
             os.remove(ipm_config)
         print ("You have successfully logged out.")
 
+    @staticmethod
     def IPMlogin(ipm_type,url,username,password):
         """ Performs Login request to IPM API to validate the connection."""
         try:
@@ -215,6 +185,7 @@ class Subscription:
             print("ERROR - Program closed unexpectedly.")
             sys.exit(1)
 
+    @staticmethod
     def validate_session(session_type):
         """ Validate user's credention during a session."""
 
@@ -266,10 +237,12 @@ class Subscription:
             print ("You're not authenticated, please proceed with authentication.")
             Subscription.login()
 
+    @staticmethod
     def create_hash(password):
         """Creates sha256 hash to encrypt the credentials."""
         return hashlib.sha256(str.encode(password)).hexdigest()
 
+    @staticmethod
     def create_token():
         """Generates unique token based on network info to be used as part of the password hash/secret."""
         hostname = socket.gethostname()
@@ -280,6 +253,7 @@ class Subscription:
 
 class Agents:
 
+    @staticmethod
     def get_agents(arguments):
         """Get the list of monitored agents from the API and display it on the screen."""
 
@@ -363,6 +337,7 @@ class Agents:
             print (line)
         sys.exit(0)
 
+    @staticmethod
     def make_agent_request(ipm_type,session_type,href_complement,subscription,region,username,password):
         """ Executes GET request to the Agent API."""
         if (ipm_type == "cloud"):
@@ -383,6 +358,7 @@ class Agents:
             sys.exit(1)
 
 
+    @staticmethod
     def add_del_agt(arguments):
         """Adds an agent to a Resource Group."""
 
@@ -432,6 +408,7 @@ class Agents:
         else:
             usage()
 
+    @staticmethod
     def make_agt_post_del_request(ipm_type,session_type,agt_id,rg_id,subscription,region,encoded_credentials,operation_type):
         """ Executes POST or DEL request to the Agent API."""
 
@@ -459,6 +436,7 @@ class Agents:
 
 class Thresholds:
 
+    @staticmethod
     def usage():
         """ Display threshold usage instructions when wrong arguments are used."""
         print ("""
@@ -474,6 +452,7 @@ class Thresholds:
     """)
         sys.exit(1)
 
+    @staticmethod
     def get_thresholds():
         """Get the list of thresholds from API and display it on the screen."""
 
@@ -658,6 +637,7 @@ class Thresholds:
             for item in (sorted(thresholds)):
                 print (item)
 
+    @staticmethod
     def make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password):
         """ Executes GET request to the Thresholds API."""
         if (ipm_type == "cloud"):
@@ -673,6 +653,7 @@ class Thresholds:
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
 
+    @staticmethod
     def if_not_empty(value):
         """Sets a dummy value if _uiThresholdType value is None to avoid errors, added this additional check due to GSMA Monitoring Agent missed _uiThresholdType value bug."""
         if value is None:
@@ -683,6 +664,7 @@ class Thresholds:
 
 class ResourceGroups:
 
+    @staticmethod
     def get_resource_groups():
         """Get the list of resource groups from API and display it on the screen."""
 
@@ -764,7 +746,7 @@ class ResourceGroups:
             for item in sorted(sorted_resource_groups, key=lambda x: x[1]):
                 print ('\',\''.join(map(str, item) ) + "\'")
 
-
+    @staticmethod
     def make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username,password):
         """ Executes GET request to the Resource Groups API."""
 
@@ -791,6 +773,7 @@ class ResourceGroups:
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
 
+    @staticmethod
     def make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password):
         """ Executes POST request to the Resource Groups API."""
 
@@ -811,6 +794,7 @@ class ResourceGroups:
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
 
+    @staticmethod
     def make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials):
         """ Executes DEL request to the Resource Groups API."""
 
@@ -835,6 +819,7 @@ class ResourceGroups:
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
 
+    @staticmethod
     def add_rg(arguments):
         """Creates a new Resource Group based on user's input."""
 
@@ -859,6 +844,7 @@ class ResourceGroups:
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
 
+    @staticmethod
     def del_rg(arguments):
         """Deletes a new Resource Group based on user's input."""
 
