@@ -722,6 +722,13 @@ class ResourceGroups:
 
             json_rg_dict = json.loads(r.content)
 
+            # Check if subscription is completely empty
+            try:
+                json_rg_dict['_items']
+            except KeyError:
+                print ("INFO - There are no Resource Groups at this IPM subscription.")
+                sys.exit(1)
+
             n = 0
             sorted_resource_groups = []
             resource_groups = []
