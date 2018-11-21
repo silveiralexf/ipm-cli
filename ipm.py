@@ -700,7 +700,7 @@ class ResourceGroups:
                     pc = 'unknown'
                     version = 'unknown'
                     status = 'unknown'
-                    pass
+
                 n += 1
                 agents.append(agt_name + "," + pc + "," + version + "," + status)
 
@@ -1044,3 +1044,4 @@ if __name__ == '__main__':
 # --------------------------------------------------------------------------------
 # END OF SCRIPT
 # --------------------------------------------------------------------------------
+
