@@ -414,6 +414,9 @@ class Agents:
             method = "POST"
         elif (operation_type == "del"):
             method = "DELETE"
+        else:
+            print ("ERROR - Could not determine session type. Exiting!")
+            sys.exit(1)
 
         if (ipm_type == "cloud"):
             href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
@@ -435,7 +438,7 @@ class Agents:
 class Thresholds:
 
     @staticmethod
-    def usage():
+    def get_usage():
         """ Display threshold usage instructions when wrong arguments are used."""
         print ("""
     You did not specify a valid command or failed to pass the proper options. Exiting!
@@ -447,6 +450,24 @@ class Thresholds:
             get thr <product_code>          : List all thresholds of a particular product code (ex: lz, nt, etc)
             get thr <thr_name>              : Displays a single threshold in JSON format.
             get thr -f <threshold_list>     : Displays multiple thresholds from a list in JSON format.
+    """)
+        sys.exit(1)
+
+    @staticmethod
+    def add_del_usage():
+        """ Display threshold usage instructions when wrong arguments are used."""
+        print ("""
+    You did not specify a valid command or failed to pass the proper options. Exiting!
+    Usage:
+            ----------------------------------------------------------------------------------------------------
+            ./ipm.py add thr <threshold_json_file>
+            ----------------------------------------------------------------------------------------------------
+            add thr <threshold_json_file>   : Creates a threshold from an IPM8 JSON export file.
+
+            ----------------------------------------------------------------------------------------------------
+            ./ipm.py del thr <threshold_name>
+            ----------------------------------------------------------------------------------------------------
+            add thr <threshold_name>        : Deletes a threshold by name.
     """)
         sys.exit(1)
 
@@ -464,7 +485,7 @@ class Thresholds:
 
         arguments = get_arg(sys.argv)
         if (len(arguments) == 3):
-            Thresholds.usage()
+            Thresholds.get_usage()
 
         # Check if user wants to display all thresholds or all by product code (***NEEDS IMPROVEMENT***)
         elif (len(arguments) >= 4):
@@ -529,7 +550,7 @@ class Thresholds:
                 # prints multiple thresholds for a list informed by the user
                 if arguments[3] == '-f':
                     if (len(arguments) != 5):
-                        Thresholds.usage()
+                        Thresholds.get_usage()
 
                     filename = arguments[4]
                     if os.path.exists(arguments[4]):
@@ -659,6 +680,147 @@ class Thresholds:
         else:
             return "\'" + value + "\'"
 
+    @staticmethod
+    def set_threshold_payload(session_type,href,encoded_credentials):
+        """Sets the header for POST requests to add a new threshold from JSON file."""
+        
+        if (session_type == "add_threshold") or (session_type == "del_threshold"):
+            headers = {
+            'Referer' : '%s' % href,
+            'Authorization' : 'Basic %s' % encoded_credentials,
+            'content-type': 'application/json',
+            'accept': 'application/json',
+            'cache-control': 'no-cache',
+            }
+            return headers
+        else:
+            print ("ERROR - Could not determine IPM subscription type. Exiting!")
+            sys.exit(1)
+
+    @staticmethod
+    def make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password):
+        """ Executes POST/DELETE request to the Thresholds API."""
+        
+        if (ipm_type == "cloud"):
+            href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
+            headers = Thresholds.set_threshold_payload(session_type,href,encoded_credentials)
+
+            if (session_type == "add_threshold"):
+                url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds'
+                r = requests.request("POST", url, json=payload, headers=headers, auth=(username,password), timeout=60)
+                return r
+            
+            elif (session_type == "del_threshold"):
+                threshold_id = payload
+                url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
+                r = requests.request("DELETE", url, headers=headers, auth=(username,password), timeout=60)
+                return r
+                
+        elif (ipm_type == "private"):
+            href = 'https://' + subscription
+            headers = Thresholds.set_threshold_payload(session_type,href,encoded_credentials)
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+            if (session_type == "add_threshold"):
+                url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds'
+                r = requests.request("POST", url, json=payload, headers=headers, auth=(username,password), timeout=60, verify=False)
+                return r
+            
+            elif (session_type == "del_threshold"):
+                threshold_id = payload
+                url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
+                r = requests.request("DELETE", url, headers=headers, auth=(username,password), timeout=60, verify=False)
+                return r
+        else:
+
+            print ("ERROR - Could not determine IPM subscription type. Exiting!")
+            sys.exit(1)
+
+    @staticmethod
+    def add_threshold(arguments):
+        """Add a new threshold from a JSON file."""
+
+        session_type = 'add_threshold'
+
+        # If function is being called from login, there will be no values assigned to vars so, we must first give it a try
+        try:
+            subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
+        except TypeError:
+            sys.exit (0)
+
+        if (len(arguments) != 4):
+            Thresholds.add_del_usage()
+        
+        try:
+            filename = arguments[3]
+            with open(filename, "r") as f:
+                payload = json.load(f)
+                encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+                
+                r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
+
+                if (r.status_code == 201):
+                    print ("SUCCESS: Threshold from file '%s' was successfully created." %(filename))
+                elif (r.status_code == 409):
+                    print ("WARNING - An existing threshold with the same label is already defined on file '%s'. No action was taken!" %(filename))
+                    sys.exit(2)
+                else:
+                    print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, filename))
+                    sys.exit(1)
+
+        except json.decoder.JSONDecodeError:
+            print ("ERROR - JSON file is wrongly formatted, please check the syntax and try again. Aborting!")
+            sys.exit(1)
+        except (IOError, OSError) as e:
+            print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
+
+    @staticmethod
+    def del_threshold(arguments):
+        """Deletes a new Threshold based on user's input."""
+
+        session_type = "del_threshold"
+
+        # If function is being called from login, there will be no values assigned to vars so, we must first give it a try to avoid errors
+        try:
+            subscription, region, alias, username, password, ipm_type = Subscription.validate_session(session_type)
+        except TypeError:
+            sys.exit (0)
+
+        # Check the arguments and make sure Threshold is informed
+        if ((len(arguments)) != 4):
+            Thresholds.add_del_usage()
+        else:
+            threshold_name = sys.argv[3]
+            encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+
+            payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
+            r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
+
+            if (r.status_code == 200):
+                json_thr_dict = json.loads(r.content)
+                n = 0
+                thresholds_found = len(json_thr_dict['_items'])
+
+                if thresholds_found > 0:
+                    for _ in json_thr_dict['_items']:
+                        payload = json_thr_dict['_items'][n]['_id']
+                        r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
+
+                        if (r.status_code == 204):
+                            print ("SUCCESS: '%s' was successfully removed." %(threshold_name))
+                        else:
+                            print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete threshold '%s'." %(r.status_code, threshold_name))
+                        n += 1
+                else:
+                    print ("ERROR - Threshold '%s' was not found." % threshold_name)
+                    sys.exit(1)
+
+                sys.exit(0)
+            else:
+                print ("Failed to extract information. Script is aborting! ")
+                sys.exit(1)
+
+
 class ResourceGroups:
 
     @staticmethod
@@ -700,7 +862,7 @@ class ResourceGroups:
                     pc = 'unknown'
                     version = 'unknown'
                     status = 'unknown'
-                    pass
+
                 n += 1
                 agents.append(agt_name + "," + pc + "," + version + "," + status)
 
@@ -721,6 +883,13 @@ class ResourceGroups:
             r = ResourceGroups.make_rg_get_request(ipm_type,session_type,rg_id,subscription,region,username,password)
 
             json_rg_dict = json.loads(r.content)
+
+            # Check if subscription is completely empty
+            try:
+                json_rg_dict['_items']
+            except KeyError:
+                print ("INFO - There are no Resource Groups at this IPM subscription.")
+                sys.exit(1)
 
             n = 0
             sorted_resource_groups = []
@@ -837,7 +1006,7 @@ class ResourceGroups:
             r = ResourceGroups.make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password)
 
             if (r.status_code == 201):
-                print ("SUCCESS: '%s' was successfully created. \n\nNotice that it may take a few seconds before the group starts to show-up.\n" %(rg_identification))
+                print ("SUCCESS: Resource Group '%s' was successfully created." %(rg_identification))
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
 
@@ -862,7 +1031,7 @@ class ResourceGroups:
             r = ResourceGroups.make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials)
 
             if (r.status_code == 204):
-                print ("SUCCESS: '%s' was successfully removed. \n\nNotice that it may take a few seconds before the group disappears.\n" %(rg_identification))
+                print ("SUCCESS: Resource Group '%s' was successfully removed." %(rg_identification))
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
 
@@ -879,7 +1048,6 @@ Usage:
 ---------------------------------------------------------------------------------------------------------
 ipm login                               : Perform login on your IPM subscription
 ipm logout                              : Logout from the current IPM subscription
-ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
 
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
@@ -892,13 +1060,13 @@ ipm get <object> / <object_id>
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
     add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
+    add thr <threshold_json_file>       : Creates a threshold from an IPM8 JSON export file
 
 ipm del <object> <object_id>
-    del thr <threshold_id>              : Deletes a threshold (*)
-    del rg  <resourcegroup_id>          : Deletes a Resource Group
+    del thr <threshold_name             : Deletes a threshold by name
+    del rg  <resourcegroup_id>          : Deletes a Resource Group by Id
     del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
 
-(*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
     """)
     sys.exit(1)
@@ -1016,7 +1184,7 @@ def main():
             elif (cmd == "agt"):
                 Agents.add_del_agt(arguments)
             elif (cmd == "thr"):
-                print ("Functionality not yet availble. Exiting!")
+                Thresholds.add_threshold(arguments)
 
         # DEL ACTIONS
         elif arguments[1] == "del":
@@ -1026,7 +1194,7 @@ def main():
             elif (cmd == "agt"):
                 Agents.add_del_agt(arguments)
             elif (cmd == "thr"):
-                print ("Functionality not yet availble. Exiting!")
+                Thresholds.del_threshold(arguments)
     except KeyboardInterrupt:
         sys.exit(1)
 
@@ -1037,3 +1205,4 @@ if __name__ == '__main__':
 # --------------------------------------------------------------------------------
 # END OF SCRIPT
 # --------------------------------------------------------------------------------
+

@@ -8,26 +8,27 @@ The idea is that users may interact with IPM from the command line for simple op
 
 |Release             |Binaries                                                                                                     |Source Code                                                                         |
 |--------------------|-------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+|v0.3.0 (Nov-21-2018)|[ipm-cli_v0.3.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.3.0/ipm-cli_v0.3.0.tar.gz)|[ipm-cli_v0.3.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.3.0.zip)|
 |v0.2.0 (Nov-18-2018)|[ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz)|[ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip)|
 |v0.1.0 (Nov-06-2018)|[ipm-cli_v0.1.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.1.0/ipm-cli_v0.1.0.tar.gz)|[ipm-cli_v0.1.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.1.0.zip)|
 
 ## Functionality
 
- *  List of monitoring agents by status, version and type.
- *  List and details of monitored thresholds
- *  Export threshold contents to JSON format 
- *  List of Resource Groups
- *  List the Monitored Agents that are part of a Resource Group
- *  Add or Remove one or more agents to a Resource Group
- *  Add or Delete a Resource Group
+  *  List of monitoring agents by status, version and type.
+  *  List and details of monitored thresholds
+  *  Export threshold contents to JSON format 
+  *  List of Resource Groups
+  *  List the Monitored Agents that are part of a Resource Group
+  *  Add or Remove one or more agents to a Resource Group
+  *  Add or Delete a Resource Group
 
 ## Key Features
 
- *  You can login and logout on different IPM subscriptions and the script will store an encrypted password for your session without the need of multiple logins each time you communicate with the API.
- *  You encrypted password is unique and cannot be used by other users.
- *  You can store the information of multiple subscriptions so that you can pick and choose the subscriptions you'll log to through a quick-menu.
- *  The compiled version of the script allows you to use the script regardless of having Python3 and its required modules installed.
- *  Open-souce, free to use, modify and distribute as you see fit. (don't forget to give some feedback too!)
+  *  You can login and logout on different IPM subscriptions and the script will store an encrypted password for your session without the need of multiple logins each time you communicate with the API.
+  *  You encrypted password is unique and cannot be used by other users.
+  *  You can store the information of multiple subscriptions so that you can pick and choose the subscriptions you'll log to through a quick-menu.
+  *  The compiled version of the script allows you to use the script regardless of having Python3 and its required modules installed.
+  *  Open-souce, free to use, modify and distribute as you see fit. (don't forget to give some feedback too!)
 
 ## Key Benefits
 
@@ -41,8 +42,8 @@ There are 2 different ways of using the script, from source and from the compile
 
 Be sure you meet the following requirements:
 
- *  Python3.x
- *  Python Requests Module (requests==2.19.1)
+  *  Python3.x
+  *  Python Requests Module (requests==2.19.1)
 
  If the requirements are properly installed, you can execute the script directly from the command line as shown below: 
 
@@ -58,7 +59,7 @@ In case you don't have Python3 and the required requests module installed, you c
 Just extract the package to your local machine, for instance under`/opt/ibm/ipm-cli`, and create a symbolic link to `/usr/bin/ipm` so you can execute the script directly from any path, as shown below:
 
 ```bash
-$ tar xvfz ipm-cli_v0.1.0.tar.gz
+$ tar xvfz ipm-cli_v0.3.0.tar.gz
 $ mkdir -p /opt/ibm/ipm-cli
 $ cp -R ipm-cli/ /opt/ibm/ipm-cli
 $ sudo ln -s /opt/ibm/ipm-cli/ipm /usr/bin/ipm
@@ -70,10 +71,10 @@ $ ipm
 
 The following functions are available:
 
-```shell
+```properties
+---------------------------------------------------------------------------------------------------------
 ipm login                               : Perform login on your IPM subscription
 ipm logout                              : Logout from the current IPM subscription
-ipm setaccount                          : Creates quick login profile with your IPM accounts (*)
 
 ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
@@ -86,13 +87,12 @@ ipm get <object> / <object_id>
 ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
     add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
+    add thr <threshold_json_file>       : Creates a threshold from an IPM8 JSON export file
 
 ipm del <object> <object_id>
-    del thr <threshold_id>              : Deletes a threshold (*)
-    del rg  <resourcegroup_id>          : Deletes a Resource Group
+    del thr <threshold_name             : Deletes a threshold by name
+    del rg  <resourcegroup_id>          : Deletes a Resource Group by Id
     del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
-
-(*) All marked items are still pending implementation
 ---------------------------------------------------------------------------------------------------------
 ```
 
@@ -118,6 +118,14 @@ To assist logging on the most common IPM subscription, you can use a configurati
    }
 ]
 ```
+
+**Please notice that the only supported values for `region` field are the following:**
+
+  *  `ap` for Asia Pacific Region
+  *  `eu` for Europe Region
+  *  `la` for Latin America Region
+  *  `na` for North America Region
+  *  `pv` for Private Servers
 
 The file should be named stored at `~/.ipmaccounts` at home directory of the user executing the script. If your file was correctly set-up you should see a similar menu when trying to perform `ipm login`:
 
