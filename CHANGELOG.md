@@ -1,6 +1,16 @@
-# v0.2.0
+# Changelog
 
-### Changelog - Nov/18/2018
+This file contains the release notes for the previous releases, and the ongoing work for the next releases.
+
+# v0.3.0
+
+**Pending release.**
+
+*  Added an exception to avoid unwanted error message when checking IPM subscriptions without any Resource Groups created. (Nov/20).
+
+# v0.2.0 
+
+Released on **Nov/18/2018**.
 
 *  Refactored the script to use classes for better organizing the code and simplify requests.
 *  Implemented new functionality to export list of thresholds to JSON (`ipm get thr -f`).
@@ -13,7 +23,7 @@
 
 # v0.1.0
 
-### Changelog - Nov/06/2018
+Released on **Nov/06/2018**.
 
 *  Improved README with more instructions and added CHANGELOG for better version control.
 *  Added a new functionality to Add/Remove an agent from Resource Groups
