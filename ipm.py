@@ -683,7 +683,7 @@ class Thresholds:
     @staticmethod
     def set_threshold_payload(session_type,href,encoded_credentials):
         """Sets the header for POST requests to add a new threshold from JSON file."""
-        
+
         if (session_type == "add_threshold") or (session_type == "del_threshold"):
             headers = {
             'Referer' : '%s' % href,
@@ -771,7 +771,7 @@ class Thresholds:
         except json.decoder.JSONDecodeError:
             print ("ERROR - JSON file is wrongly formatted, please check the syntax and try again. Aborting!")
             sys.exit(1)
-        except (IOError, OSError) as e:
+        except (IOError, OSError):
             print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
 
     @staticmethod
@@ -902,7 +902,6 @@ class ResourceGroups:
                     description = json_rg_dict['_items'][n]['description']
                 except KeyError:
                     version = "unknown"
-                    pass
                 n += 1
 
                 resource_groups = ("\'" + rg_id, displayLabel , description)

@@ -2,6 +2,12 @@
 
 This file contains the release notes for the previous releases, and the ongoing work for the next releases.
 
+# v0.4.0
+
+Pending release. 
+
+ *  Removed unrequired variable on exception check and useless pass statement
+
 # v0.3.0
 
 Released on **Nov/21/2018**.
