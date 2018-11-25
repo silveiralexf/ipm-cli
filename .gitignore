@@ -1,7 +1,7 @@
-# Ignore binaries directories
+# Ignore binaries
 ipm-cli/
 ipm.build/
 ipm.dist/
 
-# Ignore release packages
+# Ignore packages
 *.tar.gz

@@ -449,7 +449,8 @@ class Thresholds:
             get thr all                     : List all existing thresholds in the subscription.
             get thr <product_code>          : List all thresholds of a particular product code (ex: lz, nt, etc)
             get thr <thr_name>              : Displays a single threshold in JSON format.
-            get thr -f <threshold_list>     : Displays multiple thresholds from a list in JSON format.
+            get thr -f  <threshold_list>    : Displays multiple thresholds from a list in JSON format.
+            get thr -rg <rg_id>             : Displays all the thresholds assigned to this Resource Group.
     """)
         sys.exit(1)
 
@@ -594,6 +595,51 @@ class Thresholds:
                         sys.exit(1)
                     sys.exit(0)
 
+                # Prints all existing thresholds assigned to a specific Resource Group
+                elif arguments[3] == '-rg':
+                    if (len(arguments) != 5):
+                        Thresholds.get_usage()
+                    
+                    rg_id = arguments[4]
+                    payload = '/1.0/thresholdmgmt/resource_assignments?_offset=1&_limit=99999'
+                    r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
+
+                    if (r.status_code == 200):
+                        json_thr_assignments = json.loads(r.content)
+                    else:
+                        print ("Resource Group \'%s\' is invalid or empty. Exiting!" % rg_id)
+                        sys.exit(1)
+                    
+                    n = 0
+                    matches = 0
+                    count_of_rgs = len(json_thr_assignments['_items'])
+                    
+                    if (count_of_rgs > 0):
+                        
+                        for _ in json_thr_assignments['_items']:
+                            
+                            if (rg_id in (json_thr_assignments['_items'][n]['resource']['_id'])):
+                                matches += 1
+                                if (matches == 1):
+                                    print ("'threshold_name','product_code','threshold_type','description'")
+                                
+                                payload = json_thr_assignments['_items'][n]['threshold']['_href']
+                                r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
+
+                                if (r.status_code == 200):
+                                    thresholds_dic = json.loads(r.content)
+                                else:
+                                    print ("ERROR - Failed to complete request on given item. Exiting!")
+                                    sys.exit(1)
+                                
+                                print ("'" + thresholds_dic['label'] + "','" + thresholds_dic['_appliesToAgentType'] + "','" + thresholds_dic['description'] + "'")
+
+                            n += 1
+                        if (matches == 0):
+                            print ("ERROR - Resource Group '%s' is invalid or doesn't have any resources assigned." %(rg_id))
+                            sys.exit(1)
+                    sys.exit(0)
+
                 # prints a single threshold that was informed
                 threshold_name = arguments[3]
                 payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
@@ -683,7 +729,7 @@ class Thresholds:
     @staticmethod
     def set_threshold_payload(session_type,href,encoded_credentials):
         """Sets the header for POST requests to add a new threshold from JSON file."""
-        
+
         if (session_type == "add_threshold") or (session_type == "del_threshold"):
             headers = {
             'Referer' : '%s' % href,
@@ -771,7 +817,7 @@ class Thresholds:
         except json.decoder.JSONDecodeError:
             print ("ERROR - JSON file is wrongly formatted, please check the syntax and try again. Aborting!")
             sys.exit(1)
-        except (IOError, OSError) as e:
+        except (IOError, OSError):
             print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
 
     @staticmethod
@@ -902,7 +948,6 @@ class ResourceGroups:
                     description = json_rg_dict['_items'][n]['description']
                 except KeyError:
                     version = "unknown"
-                    pass
                 n += 1
 
                 resource_groups = ("\'" + rg_id, displayLabel , description)
@@ -1053,7 +1098,8 @@ ipm get <object> / <object_id>
     get agt                             : List all existing agents on the subscription.
     get thr                             : List of all available thresholds.
     get thr <thr_name>                  : Displays a single threshold in JSON format.
-    get thr -f <threshold_list>         : Displays multiple thresholds from a list in JSON format.
+    get thr -f  <threshold_list>        : Displays multiple thresholds from a list in JSON format.
+    get thr -rg <rg_id>                 : Displays all the thresholds assigned to this Resource Group.
     get rg                              : List of all available Resource Groups.
     get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
 
@@ -1063,7 +1109,7 @@ ipm add <object> <object_id>
     add thr <threshold_json_file>       : Creates a threshold from an IPM8 JSON export file
 
 ipm del <object> <object_id>
-    del thr <threshold_name             : Deletes a threshold by name
+    del thr <threshold_name>            : Deletes a threshold by name
     del rg  <resourcegroup_id>          : Deletes a Resource Group by Id
     del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
 
