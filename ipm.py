@@ -602,7 +602,7 @@ class Thresholds:
                     
                     rg_id = arguments[4]
                     payload = '/1.0/thresholdmgmt/resource_assignments?_offset=1&_limit=99999'
-                    r = Thresholds.make_assignment_request(ipm_type,session_type,payload,subscription,region,username,password)
+                    r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
                     if (r.status_code == 200):
                         json_thr_assignments = json.loads(r.content)
@@ -624,7 +624,7 @@ class Thresholds:
                                     print ("'threshold_name','product_code','threshold_type','description'")
                                 
                                 payload = json_thr_assignments['_items'][n]['threshold']['_href']
-                                r = Thresholds.make_assignment_request(ipm_type,session_type,payload,subscription,region,username,password)
+                                r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
                                 if (r.status_code == 200):
                                     thresholds_dic = json.loads(r.content)
@@ -716,25 +716,6 @@ class Thresholds:
         else:
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
-
-    @staticmethod
-    def make_assignment_request(ipm_type,session_type,payload,subscription,region,username,password):
-        """ GETs list of Thresholds assigned to a specific threshold."""
-
-
-        if (ipm_type == "cloud"):
-            url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + payload
-            r = requests.get(url, auth=(username, password), timeout=60)
-            return r
-        elif (ipm_type == "private"):
-            url = 'https://' + subscription + payload
-            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-            r = requests.get(url, auth=(username, password), verify=False, timeout=60)
-            return r
-        else:
-            print ("ERROR - Could not determine IPM subscription type. Exiting!")
-            sys.exit(1)
-
 
     @staticmethod
     def if_not_empty(value):
