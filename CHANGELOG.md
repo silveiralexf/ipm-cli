@@ -4,9 +4,10 @@ This file contains the release notes for the previous releases, and the ongoing 
 
 # v0.4.0
 
-Pending release. 
+Released on **Nov/24/2018**.
 
  *  Removed unrequired variable on exception check and useless pass statement
+ *  Added new functionality to display list of thresholds by Resource Group id.
 
 # v0.3.0
 
