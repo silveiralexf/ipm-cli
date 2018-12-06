@@ -2,6 +2,15 @@
 
 This file contains the release notes for the previous releases, and the ongoing work for the next releases.
 
+## v0.5.0
+
+Still pending release.
+
+-   Fixed duplicated error message on login steps (error was happening after a failed login followed by a successfull one).
+-   Improved file handling with new function for checking out after errors.
+-   Included requirements.txt file.
+
+
 ## v0.4.0
 
 Released on **Nov/24/2018**.

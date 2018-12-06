@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+# ------------------------------------------------------------------------------------------------------
+# API Client for communicating with IBM Application Performance Management (IPM) REST API
+# Requirements: - Python3
+#               - Python Requests Module
+# ------------------------------------------------------------------------------------------------------
 
 import os
 import sys
@@ -107,19 +112,22 @@ class Subscription:
                 with open(ipm_config, "w") as f:
                     f.write(secret)
                     print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
+                    sys.exit (0)
             except IOError:
-                print ("ERROR - Failed to login with the credentials provided. Please try again:\n")
-                sys.exit (1)
+                print ("ERROR - Failed to login with the credentials provided. Please try again.\n")
+                checks_out_on_error(ipm_config)
         else:
-            print ("ERROR - Failed to login with the credentials provided. Please try again:\n")
-            sys.exit (1)
+            print ("ERROR - Failed to login with the credentials provided. Please try again.\n")
+            checks_out_on_error(ipm_config)
 
         return subscription, region, alias, username, password, ipm_type
+
 
     @staticmethod
     def check_connection(subscription, region, alias, username, password, ipm_type):
         """Check if the provided crendials are valid to authenticate on IPM API."""
 
+        ipm_config = os.path.expanduser("~/.ipmconfig")
         queystring = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds?_offset=1&_limit=1'
         if (ipm_type == "cloud"):
             url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + queystring
@@ -135,8 +143,8 @@ class Subscription:
                 Subscription.login()
             return subscription, region, alias, username, password, ipm_type
         elif (r.status_code == 401):
-            print ("ERROR - Failed to login with the credentials provided. Please try again:\n")
-            Subscription.login()
+            print ("ERROR - Failed to login with the credentials provided. Please try again.\n")
+            checks_out_on_error(ipm_config)
         else:
             print ("ERROR - Failed to perform login. Please confirm you can log directly to your subscription.\n")
             print ("HTTP STATUS CODE ", r.status_code)
@@ -226,6 +234,7 @@ class Subscription:
 
                     if (relogin == 'R'.lower()):
                         print ('\n')
+                        os.remove(ipm_config)
                         Subscription.login()
                     else:
                         subscription, region, alias, username, password, ipm_type = Subscription.check_connection(subscription, region, alias, username, password, ipm_type)
@@ -599,7 +608,7 @@ class Thresholds:
                 elif arguments[3] == '-rg':
                     if (len(arguments) != 5):
                         Thresholds.get_usage()
-                    
+
                     rg_id = arguments[4]
                     payload = '/1.0/thresholdmgmt/resource_assignments?_offset=1&_limit=99999'
                     r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
@@ -609,20 +618,18 @@ class Thresholds:
                     else:
                         print ("Resource Group \'%s\' is invalid or empty. Exiting!" % rg_id)
                         sys.exit(1)
-                    
+
                     n = 0
                     matches = 0
                     count_of_rgs = len(json_thr_assignments['_items'])
-                    
+
                     if (count_of_rgs > 0):
-                        
                         for _ in json_thr_assignments['_items']:
-                            
                             if (rg_id in (json_thr_assignments['_items'][n]['resource']['_id'])):
                                 matches += 1
                                 if (matches == 1):
                                     print ("'threshold_name','product_code','threshold_type','description'")
-                                
+
                                 payload = json_thr_assignments['_items'][n]['threshold']['_href']
                                 r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
@@ -631,9 +638,7 @@ class Thresholds:
                                 else:
                                     print ("ERROR - Failed to complete request on given item. Exiting!")
                                     sys.exit(1)
-                                
                                 print ("'" + thresholds_dic['label'] + "','" + thresholds_dic['_appliesToAgentType'] + "','" + thresholds_dic['description'] + "'")
-
                             n += 1
                         if (matches == 0):
                             print ("ERROR - Resource Group '%s' is invalid or doesn't have any resources assigned." %(rg_id))
@@ -746,7 +751,7 @@ class Thresholds:
     @staticmethod
     def make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password):
         """ Executes POST/DELETE request to the Thresholds API."""
-        
+
         if (ipm_type == "cloud"):
             href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
             headers = Thresholds.set_threshold_payload(session_type,href,encoded_credentials)
@@ -755,13 +760,13 @@ class Thresholds:
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds'
                 r = requests.request("POST", url, json=payload, headers=headers, auth=(username,password), timeout=60)
                 return r
-            
+
             elif (session_type == "del_threshold"):
                 threshold_id = payload
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
                 r = requests.request("DELETE", url, headers=headers, auth=(username,password), timeout=60)
                 return r
-                
+
         elif (ipm_type == "private"):
             href = 'https://' + subscription
             headers = Thresholds.set_threshold_payload(session_type,href,encoded_credentials)
@@ -771,7 +776,7 @@ class Thresholds:
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds'
                 r = requests.request("POST", url, json=payload, headers=headers, auth=(username,password), timeout=60, verify=False)
                 return r
-            
+
             elif (session_type == "del_threshold"):
                 threshold_id = payload
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
@@ -796,13 +801,13 @@ class Thresholds:
 
         if (len(arguments) != 4):
             Thresholds.add_del_usage()
-        
+
         try:
             filename = arguments[3]
             with open(filename, "r") as f:
                 payload = json.load(f)
                 encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
-                
+
                 r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
 
                 if (r.status_code == 201):
@@ -1091,27 +1096,29 @@ You did not specify a valid command or failed to pass the proper options. Exitin
 
 Usage:
 ---------------------------------------------------------------------------------------------------------
-ipm login                               : Perform login on your IPM subscription
-ipm logout                              : Logout from the current IPM subscription
+ipm login                                 : Perform login on your IPM subscription
+ipm logout                                : Logout from the current IPM subscription
 
 ipm get <object> / <object_id>
-    get agt                             : List all existing agents on the subscription.
-    get thr                             : List of all available thresholds.
-    get thr <thr_name>                  : Displays a single threshold in JSON format.
-    get thr -f  <threshold_list>        : Displays multiple thresholds from a list in JSON format.
-    get thr -rg <rg_id>                 : Displays all the thresholds assigned to this Resource Group.
-    get rg                              : List of all available Resource Groups.
-    get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
+    get agt                               : List all existing agents on the subscription.
+    get thr                               : List of all available thresholds.
+    get thr <thr_name>                    : Displays a single threshold in JSON format.
+    get thr -f  <threshold_list>          : Displays multiple thresholds from a list in JSON format.
+    get thr -rg <rg_id>                   : Displays all the thresholds assigned to this Resource Group.
+    get rg                                : List of all available Resource Groups.
+    get rg <rg_id>                        : List of all Managed Systems assigned to this Resource Group.
 
 ipm add <object> <object_id>
-    add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
-    add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
-    add thr <threshold_json_file>       : Creates a threshold from an IPM8 JSON export file
+    add rg  <rg_id> "<rg_description>"    : Creates a Resource Group
+    add agt <agt_name> <rg_id>            : Adds an agent to a Resource Group
+    add thr <threshold_json_file>         : Creates a threshold from an IPM8 JSON export file
+    add thr <threshold_name> -rg <rg_id>  : Adds a threshold to a Resource Group (*)
 
 ipm del <object> <object_id>
-    del thr <threshold_name>            : Deletes a threshold by name
-    del rg  <resourcegroup_id>          : Deletes a Resource Group by Id
-    del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
+    del thr <threshold_name>              : Deletes a threshold by name
+    del rg  <resourcegroup_id>            : Deletes a Resource Group by Id
+    del agt <agt_name> <rg_id>            : Removes an agent from a Resource Group
+    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
 
 ---------------------------------------------------------------------------------------------------------
     """)
@@ -1204,6 +1211,11 @@ def set_payload(href,session_type,rg_identification, rg_description):
     else:
         print ("ERROR - Could not determine session origin. Exiting!")
         sys.exit(1)
+
+def checks_out_on_error(ipm_config):
+    if os.path.exists(ipm_config) == True:
+        os.remove(ipm_config)
+    sys.exit (1)
 
 def main():
     """Main function, will get arguments from user through 'get_arg' function and redirect according to what the user wants to accomplish."""
