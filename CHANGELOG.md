@@ -9,6 +9,8 @@ Still pending release.
 -   Fixed duplicated error message on login steps (error was happening after a failed login followed by a successfull one).
 -   Improved file handling with new function for checking out after errors.
 -   Included requirements.txt file.
+-   Increased session timeout from 120min to 240min
+-   Included try statement to catch exceptions during session validation when token was expired due to network issues.
 
 
 ## v0.4.0

@@ -15,6 +15,7 @@ import requests
 import socket
 import time
 import uuid
+import binascii
 from urllib3.exceptions import InsecureRequestWarning
 
 # ------------------------------------------------------------------------------------------------------------
@@ -200,7 +201,7 @@ class Subscription:
         ipm_config = os.path.expanduser("~/.ipmconfig")
         if os.path.exists(ipm_config) == True:
             ipm_config_age = os.path.getatime(ipm_config)
-            half_hour = time.time() - 120 * 60
+            half_hour = time.time() - 240 * 60
 
             ## DEBUG --> Uncomment values below for converting from epoch to human readable time
             # file_age = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(ipm_config_age))
@@ -218,7 +219,13 @@ class Subscription:
                 revelation = revelation.replace(str(token),'')
                 revelation = str(revelation[66:][:-1])
 
-                for item in base64.b64decode(revelation).decode().split(","):
+                try:
+                    secret = (base64.b64decode(revelation).decode().split(","))
+                except (binascii.Error):
+                    print ("INFO - Your session expired. please proceed with authentication.")
+                    os.remove(ipm_config)
+                    Subscription.login()
+                for item in secret:
                     revelations.append(item)
 
                 subscription = revelations[0]
@@ -229,7 +236,7 @@ class Subscription:
                 ipm_type =  revelations[5]
 
                 if session_type == 'login':
-                    print ("Your're already logged to IPM Subscription: '%s' (%s.%s) as user: '%s' \n" %(alias, subscription, region, username))
+                    print ("INFO - Your're already logged to IPM Subscription: '%s' (%s.%s) as user: '%s' \n" %(alias, subscription, region, username))
                     relogin = input("Press 'R' to relogin or enter any other key to proceed with the same credentials: ").lower()
 
                     if (relogin == 'R'.lower()):
@@ -243,7 +250,7 @@ class Subscription:
                 return subscription, region, alias, username, password, ipm_type
 
         except (OSError, IOError):
-            print ("You're not authenticated, please proceed with authentication")
+            print ("INFO - You're not authenticated, please proceed with authentication")
             Subscription.login()
 
     @staticmethod
