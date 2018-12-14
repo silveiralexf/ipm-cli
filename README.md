@@ -6,18 +6,20 @@ The idea is that users may interact with IPM from the command line for simple op
 
 ## Download
 
-| Release              | Binaries                                                                                                      | Source Code                                                                          |
-| -------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| v0.4.0 (Nov-24-2018) | [ipm-cli_v0.4.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.4.0/ipm-cli_v0.4.0.tar.gz) | [ipm-cli_v0.4.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.4.0.zip) |
-| v0.3.0 (Nov-21-2018) | [ipm-cli_v0.3.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.3.0/ipm-cli_v0.3.0.tar.gz) | [ipm-cli_v0.3.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.3.0.zip) |
-| v0.2.0 (Nov-18-2018) | [ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz) | [ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip) |
-| v0.1.0 (Nov-06-2018) | [ipm-cli_v0.1.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.1.0/ipm-cli_v0.1.0.tar.gz) | [ipm-cli_v0.1.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.1.0.zip) |
+| Release | Release Date |                                                   Binaries                                                    |                                     Source Code                                      |
+| ------- | ------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| v0.5.0  | Pending      | [ipm-cli_v0.5.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.5.0/ipm-cli_v0.5.0.tar.gz) | [ipm-cli_v0.5.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.5.0.zip) |
+| v0.4.0  | Nov-24-2018  | [ipm-cli_v0.4.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.4.0/ipm-cli_v0.4.0.tar.gz) | [ipm-cli_v0.4.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.4.0.zip) |
+| v0.3.0  | Nov-21-2018  | [ipm-cli_v0.3.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.3.0/ipm-cli_v0.3.0.tar.gz) | [ipm-cli_v0.3.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.3.0.zip) |
+| v0.2.0  | Nov-18-2018  | [ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz) | [ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip) |
+| v0.1.0  | Nov-06-2018  | [ipm-cli_v0.1.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.1.0/ipm-cli_v0.1.0.tar.gz) | [ipm-cli_v0.1.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.1.0.zip) |
 
 ## Functionalities
 
 -   Add or Remove one or more agents from a Resource Group
 -   Add or Delete a Resource Group
--   Add or Remove a threshold
+-   Add or Remove a Threshold
+-   Add or Remove a Threshold to/from a Resource Group
 -   Export threshold contents to JSON format 
 -   List of Monitored Agents that are part of a Resource Group
 -   List of Monitored Agents by status, version and type.
@@ -46,7 +48,7 @@ There are 2 different ways of using the script, from source and from the compile
 Be sure you meet the following requirements:
 
 -   Python3.x
--   Python Requests Module (requests==2.19.1)
+-   Python Requests Module (requests==2.20.1)
 
     If the requirements are properly installed, you can execute the script directly from the command line as shown below: 
 
@@ -62,7 +64,7 @@ In case you don't have Python3 and the required requests module installed, you c
 Just extract the package to your local machine, for instance under`/opt/ibm/ipm-cli`, and create a symbolic link to `/usr/bin/ipm` so you can execute the script directly from any path, as shown below:
 
 ```bash
-$ tar xvfz ipm-cli_v0.3.0.tar.gz
+$ tar xvfz ipm-cli_v0.5.0.tar.gz
 $ mkdir -p /opt/ibm/ipm-cli
 $ cp -R ipm-cli/ /opt/ibm/ipm-cli
 $ sudo ln -s /opt/ibm/ipm-cli/ipm /usr/bin/ipm
@@ -76,27 +78,29 @@ The following functions are available:
 
 ```properties
 ---------------------------------------------------------------------------------------------------------
-ipm login                               : Perform login on your IPM subscription
-ipm logout                              : Logout from the current IPM subscription
+ipm login                                 : Perform login on your IPM subscription
+ipm logout                                : Logout from the current IPM subscription
 
 ipm get <object> / <object_id>
-    get agt                             : List all existing agents on the subscription.
-    get thr                             : List of all available thresholds.
-    get thr <thr_name>                  : Displays a single threshold in JSON format.
-    get thr -f  <threshold_list>        : Displays multiple thresholds from a list in JSON format.
-    get thr -rg <rg_id>                 : Displays all the thresholds assigned to this Resource Group.
-    get rg                              : List of all available Resource Groups.
-    get rg <rg_id>                      : List of all Managed Systems assigned to this Resource Group.
+    get agt                               : List all existing agents on the subscription.
+    get thr                               : List of all available thresholds.
+    get thr <thr_name>                    : Displays a single threshold in JSON format.
+    get thr -f  <threshold_list>          : Displays multiple thresholds from a list in JSON format.
+    get thr -rg <rg_id>                   : Displays all the thresholds assigned to this Resource Group.
+    get rg                                : List of all available Resource Groups.
+    get rg <rg_id>                        : List of all Managed Systems assigned to this Resource Group.
 
 ipm add <object> <object_id>
-    add rg  <rg_id> "<rg_description>"  : Creates a Resource Group
-    add agt <agt_name> <rg_id>          : Adds an agent to a Resource Group
-    add thr <threshold_json_file>       : Creates a threshold from an IPM8 JSON export file
+    add rg  <rg_id> "<rg_description>"    : Creates a Resource Group
+    add agt <agt_name> <rg_id>            : Adds an agent to a Resource Group
+    add thr <threshold_json_file>         : Creates a threshold from an IPM8 JSON export file
+    add thr <threshold_name> -rg <rg_id>  : Adds a threshold to a Resource Group.
 
 ipm del <object> <object_id>
-    del thr <threshold_name>            : Deletes a threshold by name
-    del rg  <resourcegroup_id>          : Deletes a Resource Group by Id
-    del agt <agt_name> <rg_id>          : Removes an agent from a Resource Group
+    del thr <threshold_name>              : Deletes a threshold by name
+    del rg  <resourcegroup_id>            : Deletes a Resource Group by Id
+    del agt <agt_name> <rg_id>            : Removes an agent from a Resource Group
+    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
 
 ---------------------------------------------------------------------------------------------------------
 ```
