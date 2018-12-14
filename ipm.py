@@ -3,6 +3,10 @@
 # API Client for communicating with IBM Application Performance Management (IPM) REST API
 # Requirements: - Python3
 #               - Python Requests Module
+#               - Access to an active IPM subscription (cloud/private).
+# ------------------------------------------------------------------------------------------------------
+# Author        : Felipe Silveira (fsilveir@br.ibm.com)
+# Repository    : https://github.com/fsilveir/ipm-cli
 # ------------------------------------------------------------------------------------------------------
 
 import os
@@ -112,7 +116,7 @@ class Subscription:
             try:
                 with open(ipm_config, "w") as f:
                     f.write(secret)
-                    print ("SUCCESS: You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
+                    print ("SUCCESS - You're logged on '%s.%s' (%s) as user '%s' " % (alias, region, subscription, username))
                     sys.exit (0)
             except IOError:
                 print ("ERROR - Failed to login with the credentials provided. Please try again.\n")
@@ -122,7 +126,6 @@ class Subscription:
             checks_out_on_error(ipm_config)
 
         return subscription, region, alias, username, password, ipm_type
-
 
     @staticmethod
     def check_connection(subscription, region, alias, username, password, ipm_type):
@@ -208,7 +211,7 @@ class Subscription:
             # file_age_limit = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(half_hour))
 
             if ipm_config_age < half_hour:
-                #print ("DEBUG --> KEY IS OLDER THAN 120 MINUTES - FILE_AGE", file_age, "AGE_LIMIT", file_age_limit )
+                #print ("DEBUG --> KEY IS OLDER THAN 240 MINUTES - FILE_AGE", file_age, "AGE_LIMIT", file_age_limit )
                 os.remove(ipm_config)
 
         try:
@@ -412,9 +415,9 @@ class Agents:
 
                     if (r.status_code == 200 or r.status_code == 204 ):
                         if (operation_type == "add"):
-                            print ("SUCCESS: '%s' was successfully added to Resource Group '%s'." %(agt_name, rg_id))
+                            print ("SUCCESS - '%s' was successfully added to Resource Group '%s'." %(agt_name, rg_id))
                         elif (operation_type == "del"):
-                            print ("SUCCESS: '%s' was successfully removed from Resource Group '%s'." %(agt_name, rg_id))
+                            print ("SUCCESS - '%s' was successfully removed from Resource Group '%s'." %(agt_name, rg_id))
                     else:
                         print ("ERROR - Script failed with 'HTTP Status code %s' when trying to perform the operation on Resource Group '%s'." %(r.status_code, rg_id))
 
@@ -477,14 +480,16 @@ class Thresholds:
     You did not specify a valid command or failed to pass the proper options. Exiting!
     Usage:
             ----------------------------------------------------------------------------------------------------
-            ./ipm.py add thr <threshold_json_file>
+            ./ipm.py add thr <threshold_name/json_file> [ -rg <rg_id> ]
             ----------------------------------------------------------------------------------------------------
-            add thr <threshold_json_file>   : Creates a threshold from an IPM8 JSON export file.
+            add thr <threshold_json_file>         : Creates a threshold from an IPM8 JSON export file
+            add thr <threshold_name> -rg <rg_id>  : Adds a threshold to a Resource Group.
 
             ----------------------------------------------------------------------------------------------------
-            ./ipm.py del thr <threshold_name>
+            ./ipm.py del thr <threshold_name> [ -rg <rg_id> ]
             ----------------------------------------------------------------------------------------------------
-            add thr <threshold_name>        : Deletes a threshold by name.
+            del thr <threshold_name>              : Deletes a threshold by name.
+            del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
     """)
         sys.exit(1)
 
@@ -806,31 +811,74 @@ class Thresholds:
         except TypeError:
             sys.exit (0)
 
-        if (len(arguments) != 4):
+        if (len(arguments) == 4):
+            try:
+                filename = arguments[3]
+                with open(filename, "r") as f:
+                    payload = json.load(f)
+                    encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+
+                    r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
+
+                    if (r.status_code == 201):
+                        print ("SUCCESS - Threshold from file '%s' was successfully created." %(filename))
+                    elif (r.status_code == 409):
+                        print ("WARNING - An existing threshold with the same label is already defined on file '%s'. No action was taken!" %(filename))
+                        sys.exit(2)
+                    else:
+                        print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, filename))
+                        sys.exit(1)
+
+            except json.decoder.JSONDecodeError:
+                print ("ERROR - JSON file is wrongly formatted, please check the syntax and try again. Aborting!")
+                sys.exit(1)
+            except (IOError, OSError):
+                print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
+        
+        # Add a threshold to a specific resource group
+        elif (len(arguments) == 6):
+            if (arguments[4] != '-rg'):
+                Thresholds.add_del_usage()
+            
+            threshold_name = arguments[3]
+            rg_id = arguments[5]
+            
+            payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
+            r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
+
+            threshold_content = json.loads(r.content)
+            threshold_id = threshold_content['_items'][0]['_id']
+
+            encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+
+            href = "/1.0/thresholdmgmt/resource_assignments"
+            if (ipm_type == "cloud"):
+                url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href
+                
+                headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
+                payload = Thresholds.set_body(rg_id,threshold_id)
+                r = requests.post(url, data=payload, headers=headers, timeout=60)
+
+            elif (ipm_type == "private"):
+                href = 'https://' + subscription + payload
+                headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
+                payload = Thresholds.set_body(rg_id,threshold_id)
+                requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+                r = requests.post(url, data=payload, headers=headers, verify=False, timeout=60)
+
+            if (r.status_code == 201):
+                print ("SUCCESS - Threshold '%s' was successfully added to Resource Group '%s'." %(threshold_name, rg_id))
+            else:
+                print ("ERROR - Script failed with 'HTTP Status code %s' when trying to add threshold '%s' to Resource Group '%s'." %(r.status_code, threshold_name, rg_id))
+            return r
+        else:
             Thresholds.add_del_usage()
 
-        try:
-            filename = arguments[3]
-            with open(filename, "r") as f:
-                payload = json.load(f)
-                encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+    def set_body(rg_id,threshold_id):
 
-                r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
-
-                if (r.status_code == 201):
-                    print ("SUCCESS: Threshold from file '%s' was successfully created." %(filename))
-                elif (r.status_code == 409):
-                    print ("WARNING - An existing threshold with the same label is already defined on file '%s'. No action was taken!" %(filename))
-                    sys.exit(2)
-                else:
-                    print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, filename))
-                    sys.exit(1)
-
-        except json.decoder.JSONDecodeError:
-            print ("ERROR - JSON file is wrongly formatted, please check the syntax and try again. Aborting!")
-            sys.exit(1)
-        except (IOError, OSError):
-            print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
+        payload = "{\n  \"resource\": {\n    \"_id\": \"%s\"\n  }, \
+                    \n  \"threshold\": {\n    \"_id\": \"%s\"\n  }\n}" %(rg_id, threshold_id)
+        return payload
 
     @staticmethod
     def del_threshold(arguments):
@@ -865,7 +913,7 @@ class Thresholds:
                         r = Thresholds.make_add_del_request(session_type,ipm_type,subscription,region,payload,encoded_credentials,username,password)
 
                         if (r.status_code == 204):
-                            print ("SUCCESS: '%s' was successfully removed." %(threshold_name))
+                            print ("SUCCESS - '%s' was successfully removed." %(threshold_name))
                         else:
                             print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete threshold '%s'." %(r.status_code, threshold_name))
                         n += 1
@@ -1063,7 +1111,7 @@ class ResourceGroups:
             r = ResourceGroups.make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password)
 
             if (r.status_code == 201):
-                print ("SUCCESS: Resource Group '%s' was successfully created." %(rg_identification))
+                print ("SUCCESS - Resource Group '%s' was successfully created." %(rg_identification))
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to create resource group '%s'." %(r.status_code, rg_identification))
 
@@ -1088,7 +1136,7 @@ class ResourceGroups:
             r = ResourceGroups.make_rg_del_request(ipm_type,session_type,rg_identification,subscription,region,encoded_credentials)
 
             if (r.status_code == 204):
-                print ("SUCCESS: Resource Group '%s' was successfully removed." %(rg_identification))
+                print ("SUCCESS - Resource Group '%s' was successfully removed." %(rg_identification))
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
 
@@ -1119,7 +1167,7 @@ ipm add <object> <object_id>
     add rg  <rg_id> "<rg_description>"    : Creates a Resource Group
     add agt <agt_name> <rg_id>            : Adds an agent to a Resource Group
     add thr <threshold_json_file>         : Creates a threshold from an IPM8 JSON export file
-    add thr <threshold_name> -rg <rg_id>  : Adds a threshold to a Resource Group (*)
+    add thr <threshold_name> -rg <rg_id>  : Adds a threshold to a Resource Group.
 
 ipm del <object> <object_id>
     del thr <threshold_name>              : Deletes a threshold by name

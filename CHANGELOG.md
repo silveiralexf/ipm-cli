@@ -11,6 +11,8 @@ Still pending release.
 -   Included requirements.txt file.
 -   Increased session timeout from 120min to 240min
 -   Included try statement to catch exceptions during session validation when token was expired due to network issues.
+-   Added a functionality to add a threshold to a Resource Group.
+-   Updated some INFO/ERROR messages display and usage instructions to fit the same pattern.
 
 
 ## v0.4.0
