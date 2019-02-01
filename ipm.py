@@ -105,7 +105,7 @@ class Subscription:
 
         username = input('Type your IPM username (ex.: fsilveir@br.ibm.com / apmadmin): ')
         password = getpass.getpass('Type your password: ')
-        credentials = (subscription + "," + region + "," + alias + "," + username + "," + password + "," + ipm_type)
+        credentials = (subscription + "<SPLIT>" + region + "<SPLIT>" + alias + "<SPLIT>" + username + "<SPLIT>" + password + "<SPLIT>" + ipm_type)
 
         token = Subscription.create_token()
 
@@ -223,7 +223,7 @@ class Subscription:
                 revelation = str(revelation[66:][:-1])
 
                 try:
-                    secret = (base64.b64decode(revelation).decode().split(","))
+                    secret = (base64.b64decode(revelation).decode().split("<SPLIT>"))
                 except (binascii.Error):
                     print ("INFO - Your session expired. please proceed with authentication.")
                     os.remove(ipm_config)
@@ -328,22 +328,15 @@ class Agents:
         # Display all the agents in the subscription
         print ("'agent_name','hostname','product_code','description','version','status'")
         n = 0
-        for _ in json_agt_dict['_items']:
-            try:
-                agt_name = json_agt_dict['_items'][n]['keyIndexName']
-                hostname = json_agt_dict['_items'][n]['hostname']
-                product_code =  json_agt_dict['_items'][n]['productCode']
-                description =  json_agt_dict['_items'][n]['description']
-                version =  json_agt_dict['_items'][n]['version']
-                status =  json_agt_dict['_items'][n]['online']
-            except KeyError:
-                try:
-                    #product_code, version, description =  'unknown', 'unknown', 'unknown'
-                    status =  json_agt_dict['_items'][n]['online']
-                except NameError:
-                    version, hostname, product_code, status, description = 'unknown', 'unknown', 'unknown', 'N', 'unknown'
-            n += 1
-            #print ('\'' + agt_name + '\'' + "," + \
+
+# ------------------------------------------------------------------------
+        for d in json_agt_dict.get('_items'):
+            agt_name = d.get('keyIndexName', 'unknown')
+            hostname = d.get('hostname', 'unknown')
+            product_code = d.get('productCode', 'unknown')
+            description = d.get('description', 'unknown')
+            version = d.get('version', 'unknown')
+            status = d.get('online', 'unknown')
             agents.append('\'' + agt_name + '\'' + "," + \
                     '\'' + hostname + '\'' + "," + \
                     '\'' + product_code + '\'' + "," + \
@@ -372,9 +365,9 @@ class Agents:
             r = requests.get(url, params=querystring , headers=headers, auth=(username,password), timeout=60, verify=False)
             return r
         else:
+            
             print ("ERROR - Could not determine IPM subscription type. Exiting!")
             sys.exit(1)
-
 
     @staticmethod
     def add_del_agt(arguments):
@@ -402,13 +395,10 @@ class Agents:
             session_type = "add_agents"
             encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
 
-            for _ in json_agt_dict['_items']:
-                try:
-                    agt_id =  json_agt_dict['_items'][n]['_id']
-                    agt_name = json_agt_dict['_items'][n]['keyIndexName']
-                except KeyError:
-                    agt_id = "unknown"
-                    agt_name = "unknown"
+
+            for d in json_agt_dict.get('_items'):
+                agt_id = d.get('_id', 'unknown')
+                agt_name = d.get('keyIndexName', 'unknown')
 
                 if search_agent_name in agt_name:
                     r = Agents.make_agt_post_del_request(ipm_type,session_type,agt_id,rg_id,subscription,region,encoded_credentials,operation_type)
@@ -489,7 +479,7 @@ class Thresholds:
             ./ipm.py del thr <threshold_name> [ -rg <rg_id> ]
             ----------------------------------------------------------------------------------------------------
             del thr <threshold_name>              : Deletes a threshold by name.
-            del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
+            del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group
     """)
         sys.exit(1)
 
@@ -512,11 +502,14 @@ class Thresholds:
         # Check if user wants to display all thresholds or all by product code (***NEEDS IMPROVEMENT***)
         elif (len(arguments) >= 4):
 
+            # Include the Full name of the agent as its displayed on the IPM Dashboard in case missed
             if arguments[3] == 'all':
                 thr_type_list = ("GSMA Windows OS", "GSMA AIX OS", "GSMA Linux OS", "GSMA IBM Spectrum Protect", "GSMA IBM Workload Scheduler", "GSMA Oracle DB Agent",\
                 "Active Directory","MS Exchange", "MS IIS", "Windows OS", "AIX OS", "Linux OS", "Bluemix Integration", "DB2", "Virtual Servers" "Transaction Tracking", \
                 "Synthetic Transaction" , "Web Response Time", "WebSphere Application Servers", "WebSphere Agent", "Oracle Database Extended", "Cassandra", \
-                "Microsoft SQL Server", "HTTP Server", "HMC Base", "PostgreSQL", "MongoDB", "Ruby Application", "Tomcat", "VMWare VI", "WebSphere MQ")
+                "Microsoft SQL Server", "HTTP Server", "HMC Base", "PostgreSQL", "MongoDB", "Ruby Application", "Tomcat", "VMWare VI", "WebSphere MQ", "SAP HANA System")
+            
+            # The list below related the Agent Name as understood by the API to the agent Product Code to help users query thresholds related to a specific agent
             elif arguments[3].lower() == '06':
                 thr_type_list = ("GSMA Windows OS",)
             elif arguments[3].lower() == '07':
@@ -567,6 +560,8 @@ class Thresholds:
                 thr_type_list = ("db2",)
             elif arguments[3].lower() == 'sn':
                 thr_type_list = ("Synthetic Transaction",)
+            elif arguments[3].lower() == 's7':
+                thr_type_list = ("SAP HANA System",)
             else:
 
                 # prints multiple thresholds for a list informed by the user
@@ -588,21 +583,18 @@ class Thresholds:
                             payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name.strip()
                             r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
-
                             if (r.status_code == 200):
                                 json_thr_dict = json.loads(r.content)
-                                n = 0
                                 thresholds_found = len(json_thr_dict['_items'])
 
                                 if thresholds_found > 0:
-                                    for _ in json_thr_dict['_items']:
+                                    for d in json_thr_dict.get('_items'):
                                         threshold = {}
-                                        threshold['label'] = json_thr_dict['_items'][n]['label']
-                                        threshold['configuration'] = json_thr_dict['_items'][n]['configuration']
-                                        threshold['description'] = json_thr_dict['_items'][n]['description']
+                                        threshold['label'] = d['label']
+                                        threshold['configuration'] = d['configuration']
+                                        threshold['description'] = d['description']
                                         #print (json.dumps(threshold, indent=4))
                                         jsonOutputList.append(threshold)
-                                        n += 1
                                 else:
                                     print ("INFO - Threshold '%s' was not found." % threshold_name.strip())
 
@@ -631,18 +623,17 @@ class Thresholds:
                         print ("Resource Group \'%s\' is invalid or empty. Exiting!" % rg_id)
                         sys.exit(1)
 
-                    n = 0
                     matches = 0
                     count_of_rgs = len(json_thr_assignments['_items'])
 
                     if (count_of_rgs > 0):
-                        for _ in json_thr_assignments['_items']:
-                            if (rg_id in (json_thr_assignments['_items'][n]['resource']['_id'])):
+                        for d in json_thr_assignments.get('_items'):
+                            if (rg_id in (d['resource']['_id'])):
                                 matches += 1
                                 if (matches == 1):
                                     print ("'threshold_name','product_code','threshold_type','description'")
 
-                                payload = json_thr_assignments['_items'][n]['threshold']['_href']
+                                payload = d['threshold']['_href']
                                 r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
                                 if (r.status_code == 200):
@@ -651,7 +642,6 @@ class Thresholds:
                                     print ("ERROR - Failed to complete request on given item. Exiting!")
                                     sys.exit(1)
                                 print ("'" + thresholds_dic['label'] + "','" + thresholds_dic['_appliesToAgentType'] + "','" + thresholds_dic['description'] + "'")
-                            n += 1
                         if (matches == 0):
                             print ("ERROR - Resource Group '%s' is invalid or doesn't have any resources assigned." %(rg_id))
                             sys.exit(1)
@@ -664,17 +654,16 @@ class Thresholds:
 
                 if (r.status_code == 200):
                     json_thr_dict = json.loads(r.content)
-                    n = 0
                     thresholds_found = len(json_thr_dict['_items'])
 
                     if thresholds_found > 0:
-                        for _ in json_thr_dict['_items']:
+                        #for _ in json_thr_dict['_items']:
+                        for d in json_thr_dict.get('_items'):
                             threshold = {}
-                            threshold['label'] = json_thr_dict['_items'][n]['label']
-                            threshold['configuration'] = json_thr_dict['_items'][n]['configuration']
-                            threshold['description'] = json_thr_dict['_items'][n]['description']
+                            threshold['label'] = d['label','unknown']
+                            threshold['configuration'] = d['configuration','unknown']
+                            threshold['description'] = d['description','unknown']
                             print (json.dumps(threshold, indent=4))
-                            n += 1
                     else:
                         print ("ERROR - Threshold '%s' was not found." % threshold_name)
                         sys.exit(1)
@@ -747,12 +736,13 @@ class Thresholds:
     def set_threshold_payload(session_type,href,encoded_credentials):
         """Sets the header for POST requests to add a new threshold from JSON file."""
 
-        if (session_type == "add_threshold") or (session_type == "del_threshold"):
+        if (session_type == "add_threshold") or (session_type == "del_threshold") or (session_type == "remove_threshold"):
             headers = {
             'Referer' : '%s' % href,
             'Authorization' : 'Basic %s' % encoded_credentials,
             'content-type': 'application/json',
             'accept': 'application/json',
+            'scre.syncwait': "1",
             'cache-control': 'no-cache',
             }
             return headers
@@ -765,18 +755,29 @@ class Thresholds:
         """ Executes POST/DELETE request to the Thresholds API."""
 
         if (ipm_type == "cloud"):
+
             href = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com'
             headers = Thresholds.set_threshold_payload(session_type,href,encoded_credentials)
 
             if (session_type == "add_threshold"):
+                method = "POST"
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds'
-                r = requests.request("POST", url, json=payload, headers=headers, auth=(username,password), timeout=60)
+                r = requests.request(method, url, json=payload, headers=headers, auth=(username,password), timeout=60)
                 return r
 
             elif (session_type == "del_threshold"):
+                method = "DELETE"
                 threshold_id = payload
                 url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
-                r = requests.request("DELETE", url, headers=headers, auth=(username,password), timeout=60)
+                r = requests.request(method, url, headers=headers, auth=(username,password), timeout=60)
+                return r
+
+            elif (session_type == "remove_threshold"):
+                method = "DELETE"
+                threshold_id = payload
+                url = href + '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/' + threshold_id
+                #r = requests.request("GET", url, headers=headers, auth=(username,password), timeout=60)
+                print ("TEST")
                 return r
 
         elif (ipm_type == "private"):
@@ -842,7 +843,7 @@ class Thresholds:
             
             threshold_name = arguments[3]
             rg_id = arguments[5]
-            
+
             payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
             r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
@@ -850,19 +851,65 @@ class Thresholds:
             threshold_id = threshold_content['_items'][0]['_id']
 
             encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+            r = Thresholds.make_request_assignment(ipm_type,subscription,region,session_type,rg_id,threshold_id,threshold_name,encoded_credentials)
+        else:
+            Thresholds.add_del_usage()
 
-            href = "/1.0/thresholdmgmt/resource_assignments"
-            if (ipm_type == "cloud"):
-                url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href
-                
-                headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
-                payload = Thresholds.set_body(rg_id,threshold_id)
-                r = requests.post(url, data=payload, headers=headers, timeout=60)
+    @staticmethod
+    def make_request_assignment(ipm_type,subscription,region,session_type,rg_id,threshold_id,threshold_name,encoded_credentials):
+        href = "/1.0/thresholdmgmt/resource_assignments"
 
+        if (ipm_type == "cloud"):
+            url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href
+        elif (ipm_type == "private"):
+            url = 'https://' + subscription + href
+            
+        if session_type == "remove_threshold":
+            headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
+            payload = Thresholds.set_body(rg_id,threshold_id)
+            url = url + "?_filter=threshold._id%3D" + threshold_id
+
+            if (ipm_type == "cloud"): 
+                r = requests.get(url, headers=headers, timeout=60)
             elif (ipm_type == "private"):
-                href = 'https://' + subscription + payload
-                headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
-                payload = Thresholds.set_body(rg_id,threshold_id)
+                requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+                r = requests.get(url, headers=headers, verify=False, timeout=60)
+
+            threshold_content = json.loads(r.content)
+            n = 0
+            for _ in threshold_content['_items']:
+                target_thr_id = threshold_content['_items'][n]['threshold']['_id']
+                target_rg_id = threshold_content['_items'][n]['resource']['_id']
+
+                if (target_thr_id == threshold_id and target_rg_id == rg_id):
+                    resource_assignment_id = threshold_content['_items'][n]['_id']
+                    
+                    if (ipm_type == "cloud"): 
+                        url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href + "/" + resource_assignment_id
+                        r = requests.delete(url, headers=headers, timeout=60)
+                    elif (ipm_type == "private"):
+                        url = 'https://' + subscription + href + "/" + resource_assignment_id
+                        requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+                        r = requests.delete(url, headers=headers, verify=False, timeout=60)
+
+                    if (r.status_code == 204):
+                        print ("SUCCESS - '%s' was successfully removed from resource group '%s'." %(threshold_name, rg_id))
+                    else:
+                        print ("ERROR - Script failed with 'HTTP Status code %s' when trying to remove  threshold assignment '%s'." %(r.status_code, threshold_name))
+                    
+                    sys.exit(0)
+                n += 1
+            
+            print ("INFO - Threshold '%s' is not assigned to the resource id '%s'."  %(threshold_name, rg_id)) 
+            sys.exit(0)
+            
+        else:
+            headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
+            payload = Thresholds.set_body(rg_id,threshold_id)
+            
+            if (ipm_type == "cloud"): 
+                r = requests.post(url, data=payload, headers=headers, timeout=60)
+            elif (ipm_type == "private"):
                 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
                 r = requests.post(url, data=payload, headers=headers, verify=False, timeout=60)
 
@@ -871,9 +918,8 @@ class Thresholds:
             else:
                 print ("ERROR - Script failed with 'HTTP Status code %s' when trying to add threshold '%s' to Resource Group '%s'." %(r.status_code, threshold_name, rg_id))
             return r
-        else:
-            Thresholds.add_del_usage()
 
+    @staticmethod
     def set_body(rg_id,threshold_id):
 
         payload = "{\n  \"resource\": {\n    \"_id\": \"%s\"\n  }, \
@@ -883,7 +929,6 @@ class Thresholds:
     @staticmethod
     def del_threshold(arguments):
         """Deletes a new Threshold based on user's input."""
-
         session_type = "del_threshold"
 
         # If function is being called from login, there will be no values assigned to vars so, we must first give it a try to avoid errors
@@ -893,20 +938,37 @@ class Thresholds:
             sys.exit (0)
 
         # Check the arguments and make sure Threshold is informed
-        if ((len(arguments)) != 4):
-            Thresholds.add_del_usage()
-        else:
-            threshold_name = sys.argv[3]
-            encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+        num_arguments = len(arguments)
 
+        if (len(arguments) == 6):
+            if (arguments[4] == "-rg"):
+                
+                session_type = "remove_threshold"
+                threshold_name = arguments[3]
+                rg_id = arguments[5]
+
+                payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
+                r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
+
+                threshold_content = json.loads(r.content)
+                threshold_id = threshold_content['_items'][0]['_id']
+
+                encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
+                r = Thresholds.make_request_assignment(ipm_type,subscription,region,session_type,rg_id,threshold_id,threshold_name,encoded_credentials)
+            else:
+                Thresholds.add_del_usage()
+
+        if (num_arguments == 4):
+            threshold_name = arguments[3]
+            encoded_credentials = base64.b64encode(("%s:%s" % (username, password)).encode()).decode()
             payload = '/1.0/thresholdmgmt/threshold_types/itm_private_situation/thresholds/?_filter=label%3D' + threshold_name
             r = Thresholds.make_threshold_request(ipm_type,session_type,payload,subscription,region,username,password)
 
             if (r.status_code == 200):
                 json_thr_dict = json.loads(r.content)
-                n = 0
                 thresholds_found = len(json_thr_dict['_items'])
-
+                
+                n = 0
                 if thresholds_found > 0:
                     for _ in json_thr_dict['_items']:
                         payload = json_thr_dict['_items'][n]['_id']
@@ -925,8 +987,8 @@ class Thresholds:
             else:
                 print ("Failed to extract information. Script is aborting! ")
                 sys.exit(1)
-
-
+        else:
+            Thresholds.add_del_usage()
 class ResourceGroups:
 
     @staticmethod
@@ -1045,7 +1107,7 @@ class ResourceGroups:
             sys.exit(1)
 
     @staticmethod
-    def make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password):
+    def make_rg_post_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password):
         """ Executes POST request to the Resource Groups API."""
 
         if (ipm_type == "cloud"):
@@ -1108,7 +1170,7 @@ class ResourceGroups:
         else:
             rg_identification = sys.argv[3]
             rg_description = sys.argv[4]
-            r = ResourceGroups.make_rg_put_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password)
+            r = ResourceGroups.make_rg_post_request(ipm_type,session_type,rg_identification,rg_description,subscription,region,username,password)
 
             if (r.status_code == 201):
                 print ("SUCCESS - Resource Group '%s' was successfully created." %(rg_identification))
@@ -1173,7 +1235,7 @@ ipm del <object> <object_id>
     del thr <threshold_name>              : Deletes a threshold by name
     del rg  <resourcegroup_id>            : Deletes a Resource Group by Id
     del agt <agt_name> <rg_id>            : Removes an agent from a Resource Group
-    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
+    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group
 
 ---------------------------------------------------------------------------------------------------------
     """)
@@ -1212,6 +1274,7 @@ def set_headers_for_post_deletion(href,session_type,rg_identification,encoded_cr
         'content-type': 'application/json',
         'accept': 'application/json',
         'cache-control': 'no-cache',
+        'scre.syncwait': "1",
         'IPMSessionUUID' : '%s' % rg_uuid
         }
         return headers
@@ -1225,6 +1288,7 @@ def set_querystring(href,session_type):
     headers = {
     'content-type': "application/json",
     'accept': "application/json",
+    'scre.syncwait': "1",
     'Referer': href
     }
 
@@ -1252,6 +1316,7 @@ def set_payload(href,session_type,rg_identification, rg_description):
     headers = {
     'content-type': "application/json",
     'accept': "application/json",
+    'scre.syncwait': "1",
     'Referer': href
     }
 
@@ -1318,4 +1383,3 @@ if __name__ == '__main__':
 # --------------------------------------------------------------------------------
 # END OF SCRIPT
 # --------------------------------------------------------------------------------
-

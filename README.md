@@ -8,7 +8,7 @@ The idea is that users may interact with IPM from the command line for simple op
 
 | Release | Release Date |                                                   Binaries                                                    |                                     Source Code                                      |
 | ------- | ------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| v0.5.0  | Pending      | [ipm-cli_v0.5.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.5.0/ipm-cli_v0.5.0.tar.gz) | [ipm-cli_v0.5.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.5.0.zip) |
+| v0.5.0  | Jan-31-2019  | [ipm-cli_v0.5.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.5.0/ipm-cli_v0.5.0.tar.gz) | [ipm-cli_v0.5.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.5.0.zip) |
 | v0.4.0  | Nov-24-2018  | [ipm-cli_v0.4.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.4.0/ipm-cli_v0.4.0.tar.gz) | [ipm-cli_v0.4.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.4.0.zip) |
 | v0.3.0  | Nov-21-2018  | [ipm-cli_v0.3.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.3.0/ipm-cli_v0.3.0.tar.gz) | [ipm-cli_v0.3.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.3.0.zip) |
 | v0.2.0  | Nov-18-2018  | [ipm-cli_v0.2.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.2.0/ipm-cli_v0.2.0.tar.gz) | [ipm-cli_v0.2.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.2.0.zip) |
@@ -100,7 +100,7 @@ ipm del <object> <object_id>
     del thr <threshold_name>              : Deletes a threshold by name
     del rg  <resourcegroup_id>            : Deletes a Resource Group by Id
     del agt <agt_name> <rg_id>            : Removes an agent from a Resource Group
-    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group (*)
+    del thr <threshold_name> -rg <rg_id>  : Removes a threshold to a Resource Group
 
 ---------------------------------------------------------------------------------------------------------
 ```
