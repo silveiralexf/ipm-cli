@@ -2,6 +2,23 @@
 
 This file contains the release notes for the previous releases, and the ongoing work for the next releases.
 
+## v0.5.0
+
+Released on **Jan/31/2019**.
+
+-   Fixed duplicated error message on login steps (error was happening after a failed login followed by a successfull one).
+-   Improved file handling with new function for checking out after errors.
+-   Included requirements.txt file.
+-   Increased session timeout from 120min to 240min
+-   Included try statement to catch exceptions during session validation when token was expired due to network issues.
+-   Added a functionality to add / remove a threshold to / from a Resource Group.
+-   Updated some INFO/ERROR messages display and usage instructions to fit the same pattern.
+-   Fixed error handling of missing KeyIndex value on Agents.get_agents function
+-   Refactored multiple try/except statements to avoid exceptions
+-   Fixed bug related to special characters in password that would cause an exception on IPM Private subscriptions.
+-   Added / improved comments to better document the code.
+
+
 ## v0.4.0
 
 Released on **Nov/24/2018**.
