@@ -8,6 +8,7 @@ The idea is that users may interact with IPM from the command line for simple op
 
 | Release | Release Date |                                                   Binaries                                                    |                                     Source Code                                      |
 | ------- | ------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| v0.5.1  | Feb-02-2019  | [ipm-cli_v0.5.1 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.5.1/ipm-cli_v0.5.1.tar.gz) | [ipm-cli_v0.5.1 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.5.1.zip) |
 | v0.5.0  | Jan-31-2019  | [ipm-cli_v0.5.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.5.0/ipm-cli_v0.5.0.tar.gz) | [ipm-cli_v0.5.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.5.0.zip) |
 | v0.4.0  | Nov-24-2018  | [ipm-cli_v0.4.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.4.0/ipm-cli_v0.4.0.tar.gz) | [ipm-cli_v0.4.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.4.0.zip) |
 | v0.3.0  | Nov-21-2018  | [ipm-cli_v0.3.0 Binaries](https://github.com/fsilveir/ipm-cli/releases/download/v0.3.0/ipm-cli_v0.3.0.tar.gz) | [ipm-cli_v0.3.0 Source Code](https://github.com/fsilveir/ipm-cli/archive/v0.3.0.zip) |

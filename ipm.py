@@ -295,30 +295,23 @@ class Agents:
         agents = []
         if (num_arguments > 3):
             print ("'agent_name','hostname','product_code','description','version','status'")
-            for _ in json_agt_dict['_items']:
-                try:
-                    agt_name = json_agt_dict['_items'][n]['keyIndexName']
-                    hostname = json_agt_dict['_items'][n]['hostname']
-                    product_code =  json_agt_dict['_items'][n]['productCode']
-                    description =  json_agt_dict['_items'][n]['description']
-                    version =  json_agt_dict['_items'][n]['version']
-                    status =  json_agt_dict['_items'][n]['online']
-                except KeyError:
-                    hostname = "unknown"
-                    product_code = "unknown"
-                    description = "unknown"
-                    version = "unknown"
-                    status = "N"
+            for d in json_agt_dict.get('_items'):
+                agt_name =  d.get('keyIndexName','unknown')
+                hostname = d.get('hostname','unknown')
+                product_code =  d.get('productCode','unknown')
+                description =  d.get('description','unknown')
+                version =  d.get('version','unknown')
+                status =  d.get('online','unknown')
 
                 for num in range(3, num_arguments):
                     if arguments[num].lower() in agt_name.lower():
-                        #print ('\'' + agt_name + '\'' + "," + \
-                        agents.append('\'' + agt_name + '\'' + "," + \
-                            '\'' + hostname + '\'' + "," + \
-                            '\'' + product_code + '\'' + "," + \
-                            '\'' + description + '\'' + "," + \
-                            '\'' + version + '\'' + "," + \
-                            '\'' + status + '\'' )
+                        if (agt_name != 'unknown'):
+                            agents.append('\'' + agt_name + '\'' + "," + \
+                                '\'' + hostname + '\'' + "," + \
+                                '\'' + product_code + '\'' + "," + \
+                                '\'' + description + '\'' + "," + \
+                                '\'' + version + '\'' + "," + \
+                                '\'' + status + '\'' )
                 n += 1
 
             for line in (sorted(agents)):
@@ -327,9 +320,6 @@ class Agents:
 
         # Display all the agents in the subscription
         print ("'agent_name','hostname','product_code','description','version','status'")
-        n = 0
-
-# ------------------------------------------------------------------------
         for d in json_agt_dict.get('_items'):
             agt_name = d.get('keyIndexName', 'unknown')
             hostname = d.get('hostname', 'unknown')
@@ -337,12 +327,14 @@ class Agents:
             description = d.get('description', 'unknown')
             version = d.get('version', 'unknown')
             status = d.get('online', 'unknown')
-            agents.append('\'' + agt_name + '\'' + "," + \
-                    '\'' + hostname + '\'' + "," + \
-                    '\'' + product_code + '\'' + "," + \
-                    '\'' + description + '\'' + "," + \
-                    '\'' + version + '\'' + "," + \
-                    '\'' + status + '\'' )
+            
+            if (agt_name != 'unknown'):
+                agents.append('\'' + agt_name + '\'' + "," + \
+                        '\'' + hostname + '\'' + "," + \
+                        '\'' + product_code + '\'' + "," + \
+                        '\'' + description + '\'' + "," + \
+                        '\'' + version + '\'' + "," + \
+                        '\'' + status + '\'' )
 
         for line in (sorted(agents)):
             print (line)
@@ -409,7 +401,7 @@ class Agents:
                         elif (operation_type == "del"):
                             print ("SUCCESS - '%s' was successfully removed from Resource Group '%s'." %(agt_name, rg_id))
                     else:
-                        print ("ERROR - Script failed with 'HTTP Status code %s' when trying to perform the operation on Resource Group '%s'." %(r.status_code, rg_id))
+                        print ("ERROR - Script failed with 'HTTP Status code %s' when trying to perform the operation on Resource Group '%s' on '%s'." %(r.status_code, rg_id, alias))
 
                 n += 1
         else:
@@ -835,7 +827,7 @@ class Thresholds:
                 sys.exit(1)
             except (IOError, OSError):
                 print ("ERROR - File '%s' was not found or can't be accessed. Exiting!" % filename)
-        
+
         # Add a threshold to a specific resource group
         elif (len(arguments) == 6):
             if (arguments[4] != '-rg'):
@@ -863,7 +855,7 @@ class Thresholds:
             url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href
         elif (ipm_type == "private"):
             url = 'https://' + subscription + href
-            
+
         if session_type == "remove_threshold":
             headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
             payload = Thresholds.set_body(rg_id,threshold_id)
@@ -883,7 +875,7 @@ class Thresholds:
 
                 if (target_thr_id == threshold_id and target_rg_id == rg_id):
                     resource_assignment_id = threshold_content['_items'][n]['_id']
-                    
+
                     if (ipm_type == "cloud"): 
                         url = 'https://' + subscription + '.customers.' + region + '.apm.ibmserviceengage.com' + href + "/" + resource_assignment_id
                         r = requests.delete(url, headers=headers, timeout=60)
@@ -896,17 +888,17 @@ class Thresholds:
                         print ("SUCCESS - '%s' was successfully removed from resource group '%s'." %(threshold_name, rg_id))
                     else:
                         print ("ERROR - Script failed with 'HTTP Status code %s' when trying to remove  threshold assignment '%s'." %(r.status_code, threshold_name))
-                    
+
                     sys.exit(0)
                 n += 1
-            
-            print ("INFO - Threshold '%s' is not assigned to the resource id '%s'."  %(threshold_name, rg_id)) 
+
+            print ("INFO - Threshold '%s' is not assigned to the resource id '%s'." %(threshold_name, rg_id))
             sys.exit(0)
-            
+
         else:
             headers = Thresholds.set_threshold_payload(session_type,url,encoded_credentials)
             payload = Thresholds.set_body(rg_id,threshold_id)
-            
+
             if (ipm_type == "cloud"): 
                 r = requests.post(url, data=payload, headers=headers, timeout=60)
             elif (ipm_type == "private"):
@@ -1200,10 +1192,7 @@ class ResourceGroups:
             if (r.status_code == 204):
                 print ("SUCCESS - Resource Group '%s' was successfully removed." %(rg_identification))
             else:
-                print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s'." %(r.status_code, rg_identification))
-
-#-----------------------------------------------------------------------------------------------------------
-
+                print ("ERROR - Script failed with 'HTTP Status code %s' when trying to delete this resource group '%s' from '%s'." %(r.status_code, rg_identification, alias))
 
 def usage():
     """Usage instructions, will be shown to user every time a wrong syntax happens."""

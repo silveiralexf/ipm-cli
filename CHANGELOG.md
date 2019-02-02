@@ -2,6 +2,13 @@
 
 This file contains the release notes for the previous releases, and the ongoing work for the next releases.
 
+
+## v0.5.1
+
+Released on **Feb/02/2019**.
+
+-   Fixed [Issue #7](https://github.com/fsilveir/ipm-cli/issues/7)
+
 ## v0.5.0
 
 Released on **Jan/31/2019**.
