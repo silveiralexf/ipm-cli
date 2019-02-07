@@ -578,7 +578,6 @@ class Thresholds:
                             if (r.status_code == 200):
                                 json_thr_dict = json.loads(r.content)
                                 thresholds_found = len(json_thr_dict['_items'])
-
                                 if thresholds_found > 0:
                                     for d in json_thr_dict.get('_items'):
                                         threshold = {}
@@ -652,9 +651,9 @@ class Thresholds:
                         #for _ in json_thr_dict['_items']:
                         for d in json_thr_dict.get('_items'):
                             threshold = {}
-                            threshold['label'] = d['label','unknown']
-                            threshold['configuration'] = d['configuration','unknown']
-                            threshold['description'] = d['description','unknown']
+                            threshold['label'] = d['label']
+                            threshold['configuration'] = d['configuration']
+                            threshold['description'] = d['description']
                             print (json.dumps(threshold, indent=4))
                     else:
                         print ("ERROR - Threshold '%s' was not found." % threshold_name)
@@ -959,7 +958,6 @@ class Thresholds:
             if (r.status_code == 200):
                 json_thr_dict = json.loads(r.content)
                 thresholds_found = len(json_thr_dict['_items'])
-                
                 n = 0
                 if thresholds_found > 0:
                     for _ in json_thr_dict['_items']:
