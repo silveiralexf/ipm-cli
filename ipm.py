@@ -401,7 +401,7 @@ class Agents:
                         elif (operation_type == "del"):
                             print ("SUCCESS - '%s' was successfully removed from Resource Group '%s'." %(agt_name, rg_id))
                     else:
-                        print ("ERROR - Script failed with 'HTTP Status code %s' when trying to perform the operation on Resource Group '%s' on '%s'." %(r.status_code, rg_id, alias))
+                        print ("ERROR - Failed with 'HTTP Status code %s' when trying to add/remove '%s' to Resource Group '%s' on '%s'." %(r.status_code, agt_name, rg_id, alias))
 
                 n += 1
         else:
