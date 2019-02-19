@@ -2,6 +2,12 @@
 
 This file contains the release notes for the previous releases, and the ongoing work for the next releases.
 
+## v0.5.2
+
+Released on **Feb/19/2019**.
+
+-   Improved error message for RG add/remove failures
+
 
 ## v0.5.1
 
